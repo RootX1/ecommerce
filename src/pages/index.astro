@@ -13,8 +13,9 @@ try {
   const params = new URLSearchParams({ per_page: '20', status: 'publish' });
   const wooProducts = await listProducts(env, params);
   if (wooProducts.length > 0) products = mapWooProducts(wooProducts);
-} catch {
+} catch (err) {
   // WooCommerce unreachable (e.g. local `astro dev` without bindings) — fall back to mock data.
+  console.error('WooCommerce fetch failed on /:', err);
 }
 ---
 

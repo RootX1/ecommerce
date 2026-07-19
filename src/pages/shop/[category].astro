@@ -20,8 +20,9 @@ try {
     const wooProducts = await listProducts(env, new URLSearchParams({ category: String(match.id), per_page: '50', status: 'publish' }));
     products = mapWooProducts(wooProducts);
   }
-} catch {
+} catch (err) {
   // WooCommerce unreachable (e.g. local `astro dev` without bindings) — fall back to mock data.
+  console.error('WooCommerce fetch failed on /shop/[category]:', err);
 }
 ---
 

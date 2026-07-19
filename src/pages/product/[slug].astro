@@ -14,8 +14,9 @@ try {
   const env = Astro.locals.runtime.env;
   const wooProduct = await getProductBySlug(env, slug);
   if (wooProduct) product = mapWooProduct(wooProduct);
-} catch {
+} catch (err) {
   // WooCommerce unreachable (e.g. local `astro dev` without bindings) — fall back to mock data.
+  console.error('WooCommerce fetch failed on /product/[slug]:', err);
 }
 if (!product) product = getMockProductBySlug(slug);
 if (!product) return Astro.redirect(withBase('/shop'));
