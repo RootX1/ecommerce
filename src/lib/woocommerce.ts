@@ -8,17 +8,18 @@ export interface WooCommerceEnv {
   WOOCOMMERCE_CONSUMER_SECRET: string;
 }
 
-function authHeader(env: WooCommerceEnv): string {
-  const token = btoa(`${env.WOOCOMMERCE_CONSUMER_KEY}:${env.WOOCOMMERCE_CONSUMER_SECRET}`);
-  return `Basic ${token}`;
-}
-
 async function wooFetch<T>(env: WooCommerceEnv, path: string, init: RequestInit = {}): Promise<T> {
-  const url = `${env.PUBLIC_WOOCOMMERCE_API_URL}${path}`;
-  const res = await fetch(url, {
+  // Query-string auth instead of a Basic Auth header: shared hosts (Xneelo
+  // included) commonly strip the Authorization header before PHP ever sees
+  // it, which breaks Basic Auth silently with a 401. Query params can't be
+  // stripped that way, and WooCommerce accepts either over HTTPS.
+  const url = new URL(`${env.PUBLIC_WOOCOMMERCE_API_URL}${path}`);
+  url.searchParams.set('consumer_key', env.WOOCOMMERCE_CONSUMER_KEY);
+  url.searchParams.set('consumer_secret', env.WOOCOMMERCE_CONSUMER_SECRET);
+
+  const res = await fetch(url.toString(), {
     ...init,
     headers: {
-      Authorization: authHeader(env),
       'Content-Type': 'application/json',
       ...init.headers,
     },
