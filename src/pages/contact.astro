@@ -25,8 +25,13 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
       <p class="form-status" data-contact-status hidden></p>
     </form>
 
+    <a class="whatsapp-btn" href="https://wa.me/27680660131" target="_blank" rel="noopener noreferrer">
+      💬 Chat on WhatsApp
+    </a>
+
     <div class="business-info">
-      <p><strong>Email:</strong> orders@yourdomain.co.za</p>
+      <p><strong>Email:</strong> <a href="mailto:sales@ecommercegoods.co.za">sales@ecommercegoods.co.za</a></p>
+      <p><strong>WhatsApp:</strong> <a href="https://wa.me/27680660131" target="_blank" rel="noopener noreferrer">+27 68 066 0131</a></p>
       <p><strong>Location:</strong> Cape Town, South Africa</p>
       <p><strong>Hours:</strong> Mon–Fri, 9:00–17:00 SAST</p>
     </div>
@@ -88,6 +93,23 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   .business-info p {
     font-size: 13px;
     color: var(--muted);
+  }
+  .business-info a {
+    color: #fff;
+    text-decoration: underline;
+  }
+  .whatsapp-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #25d366;
+    color: #fff;
+    text-decoration: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-top: 8px;
   }
 </style>
 
