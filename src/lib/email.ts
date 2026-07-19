@@ -23,6 +23,16 @@ export interface SendEmailInput {
 }
 
 export async function sendEmail(env: SmtpEnv, input: SendEmailInput): Promise<boolean> {
+  // Fail loudly with a legible message instead of letting `undefined` reach
+  // the SMTP client, which otherwise surfaces as a cryptic protocol error
+  // ("Invalid MAIL FROM: <undefined>") that doesn't say which secret is missing.
+  const missing: string[] = (['SMTP_HOST', 'SMTP_PORT', 'SMTP_USERNAME', 'SMTP_PASSWORD'] as const).filter((key) => !env[key]);
+  if (!input.from) missing.push('from (e.g. CONTACT_FROM_EMAIL)');
+  if (missing.length > 0) {
+    console.error(`SMTP send skipped — missing config: ${missing.join(', ')}`);
+    return false;
+  }
+
   const port = Number(env.SMTP_PORT || '587');
   try {
     await WorkerMailer.send(
