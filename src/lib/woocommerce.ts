@@ -1,6 +1,6 @@
 // Server-side WooCommerce REST API client. Only ever imported from
-// Cloudflare Pages Functions (functions/api/*), never from browser code —
-// the consumer key/secret must not reach the client.
+// server-rendered API routes (src/pages/api/*.ts), never from browser
+// code — the consumer key/secret must not reach the client.
 
 export interface WooCommerceEnv {
   PUBLIC_WOOCOMMERCE_API_URL: string;

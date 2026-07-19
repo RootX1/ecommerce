@@ -1,22 +1,11 @@
 // POST /api/contact
 // Spam-protected contact form handler. Sends via MailChannels, which is
-// free to use from Cloudflare Workers/Pages once a DNS lockdown TXT record
-// is added for the sending domain (see docs/SECURITY.md).
-import {
-  sanitizeText,
-  containsLinkOrScript,
-  honeypotTripped,
-  verifyTurnstile,
-  checkRateLimit,
-  clientIp,
-} from '../../src/lib/security';
+// free to use from Cloudflare Workers once a DNS lockdown TXT record is
+// added for the sending domain (see docs/SECURITY.md).
+import type { APIRoute } from 'astro';
+import { sanitizeText, containsLinkOrScript, honeypotTripped, verifyTurnstile, checkRateLimit, clientIp } from '../../lib/security';
 
-interface Env {
-  RATE_LIMIT_KV: KVNamespace;
-  CONTACT_TO_EMAIL: string;
-  CONTACT_FROM_EMAIL: string;
-  TURNSTILE_SECRET_KEY: string;
-}
+export const prerender = false;
 
 interface ContactPayload {
   name: string;
@@ -26,7 +15,8 @@ interface ContactPayload {
   company?: string; // honeypot
 }
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
+  const env = locals.runtime.env;
   const ip = clientIp(request);
   const withinLimit = await checkRateLimit(env.RATE_LIMIT_KV, `contact:${ip}`, 5, 600);
   if (!withinLimit) {

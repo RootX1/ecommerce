@@ -2,11 +2,12 @@
 
 ## Architecture principle
 
-The Astro frontend is fully static and never talks to WooCommerce directly.
-All writes (reviews, orders, contact messages) go through Cloudflare Pages
-Functions in `functions/api/*`, which hold the WooCommerce consumer
-key/secret and Turnstile secret as **encrypted environment variables** —
-none of these ever reach the browser.
+The Astro frontend is prerendered static HTML by default. All writes
+(reviews, orders, contact messages) go through server-rendered API routes
+in `src/pages/api/*.ts` (part of the same Cloudflare Worker, via the
+`@astrojs/cloudflare` adapter), which hold the WooCommerce consumer
+key/secret and Turnstile secret as Worker **secrets** (`wrangler secret
+put`, never `wrangler.jsonc`) — none of these ever reach the browser.
 
 ## Input sanitization
 
@@ -48,16 +49,20 @@ none of these ever reach the browser.
 
 ## API keys & secrets
 
-- Local dev: copy `.env.example` to `.env` (git-ignored).
-- Production: set the same variable names as **encrypted secrets** in the
-  Cloudflare Pages project settings (Settings → Environment variables →
-  "Encrypt"). Never commit real keys.
+- Local dev: copy `.env.example` to `.env` (git-ignored); `wrangler dev`
+  also reads a `.dev.vars` file for binding-shaped local secrets.
+- Production: non-secret values live in the committed `wrangler.jsonc`
+  under `vars`. Actual secrets (`WOOCOMMERCE_CONSUMER_KEY/SECRET`,
+  `TURNSTILE_SECRET_KEY`, `CONTACT_TO_EMAIL`/`CONTACT_FROM_EMAIL`) are set
+  with `wrangler secret put <NAME>` — never put them in `wrangler.jsonc`
+  (it's committed to git) or as plain dashboard env vars (those get
+  silently overwritten by `wrangler.jsonc`'s `vars` on every deploy).
 - Rotate the WooCommerce Consumer Key/Secret and Turnstile secret
   immediately if they are ever exposed in a log, screenshot, or commit.
 
 ## Reviews: verified purchase + moderation
 
-- `functions/api/reviews.ts` marks first-time reviewers' submissions as
+- `src/pages/api/reviews.ts` marks first-time reviewers' submissions as
   `hold` so they sit in the WooCommerce moderation queue before appearing.
 - Verified-purchase badges are driven by WooCommerce's own order history —
   cross-reference the reviewer's email against completed orders for that
@@ -89,16 +94,16 @@ key/secret key pair at Cloudflare dashboard → **Turnstile** → **Add site**.
 
 ### Cloudflare KV binding required
 
-`functions/api/reviews.ts`, `checkout.ts`, and `contact.ts` all expect a KV
-namespace bound as `RATE_LIMIT_KV`. Create it once and bind it in the
-Cloudflare Pages project:
+`src/pages/api/reviews.ts`, `checkout.ts`, and `contact.ts` all expect a KV
+namespace bound as `RATE_LIMIT_KV`. Create it once:
 
 ```
-wrangler kv:namespace create RATE_LIMIT_KV
+npx wrangler kv namespace create RATE_LIMIT_KV
 ```
 
-Then bind the resulting namespace ID under Pages → Settings → Functions →
-KV namespace bindings.
+Then put the resulting namespace `id` into `wrangler.jsonc`'s
+`kv_namespaces` entry (already scaffolded there) — the binding is defined
+by that committed file, not the dashboard.
 
 ### Cloudflare WAF rules (configure in dashboard, not code)
 

@@ -6,18 +6,20 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro build",
+    "build": "astro build && node scripts/postbuild.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
-    "check:functions": "tsc -p functions/tsconfig.json"
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
-    "astro": "^4.16.0"
+    "@astrojs/cloudflare": "11.2.0",
+    "astro": "^4.16.0",
+    "wrangler": "4.112.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
-    "@cloudflare/workers-types": "^4.20250101.0",
+    "@cloudflare/workers-types": "5.20260719.1",
     "typescript": "^5.9.3"
   }
 }

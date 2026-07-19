@@ -1,10 +1,12 @@
 // GET /api/products?category=&search=
 // Thin, cached proxy to WooCommerce so the consumer key/secret stays server-side.
-import { listProducts, type WooCommerceEnv } from '../../src/lib/woocommerce';
+import type { APIRoute } from 'astro';
+import { listProducts } from '../../lib/woocommerce';
 
-interface Env extends WooCommerceEnv {}
+export const prerender = false;
 
-export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
+export const GET: APIRoute = async ({ request, locals }) => {
+  const env = locals.runtime.env;
   const url = new URL(request.url);
   const params = new URLSearchParams();
   const category = url.searchParams.get('category');
@@ -25,7 +27,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
         'Cache-Control': 'public, max-age=60, s-maxage=300',
       },
     });
-  } catch (err) {
+  } catch {
     return new Response(JSON.stringify({ error: 'Unable to load products' }), {
       status: 502,
       headers: { 'Content-Type': 'application/json' },

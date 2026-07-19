@@ -15,7 +15,7 @@
 - [ ] Set R2 custom domain caching / Cloudflare Cache Rules so video and
       poster assets are cached at the edge (`Cache-Control: public,
       max-age=31536000, immutable` for versioned filenames).
-- [ ] `functions/api/products.ts` already sets `Cache-Control: public,
+- [ ] `src/pages/api/products.ts` already sets `Cache-Control: public,
       max-age=60, s-maxage=300` — tune per how often inventory changes.
 - [ ] Enable Cloudflare Auto Minify (JS/CSS/HTML) and Brotli compression on
       the zone.

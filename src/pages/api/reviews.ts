@@ -1,21 +1,13 @@
 // GET  /api/reviews?product=123        -> approved reviews for a product
 // POST /api/reviews                     -> submit a new review (spam-protected)
-import { listProductReviews, createProductReview, type WooCommerceEnv } from '../../src/lib/woocommerce';
-import {
-  sanitizeText,
-  containsLinkOrScript,
-  honeypotTripped,
-  verifyTurnstile,
-  checkRateLimit,
-  clientIp,
-} from '../../src/lib/security';
+import type { APIRoute } from 'astro';
+import { listProductReviews, createProductReview } from '../../lib/woocommerce';
+import { sanitizeText, containsLinkOrScript, honeypotTripped, verifyTurnstile, checkRateLimit, clientIp } from '../../lib/security';
 
-interface Env extends WooCommerceEnv {
-  TURNSTILE_SECRET_KEY: string;
-  RATE_LIMIT_KV: KVNamespace;
-}
+export const prerender = false;
 
-export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
+export const GET: APIRoute = async ({ request, locals }) => {
+  const env = locals.runtime.env;
   const url = new URL(request.url);
   const productId = url.searchParams.get('product');
   if (!productId) {
@@ -38,7 +30,8 @@ interface ReviewPayload {
   isFirstTimeReviewer?: boolean;
 }
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
+  const env = locals.runtime.env;
   const ip = clientIp(request);
 
   // 1. Rate limit: 5 review submissions per IP per 10 minutes.

@@ -4,12 +4,11 @@
 // ("on-hold" is WooCommerce's default status for BACS) until the store
 // owner manually confirms the transfer and marks it as paid/processing
 // in wp-admin.
-import { createOrder, getBacsGateway, type WooCommerceEnv } from '../../src/lib/woocommerce';
-import { sanitizeText, checkRateLimit, clientIp } from '../../src/lib/security';
+import type { APIRoute } from 'astro';
+import { createOrder, getBacsGateway } from '../../lib/woocommerce';
+import { sanitizeText, checkRateLimit, clientIp } from '../../lib/security';
 
-interface Env extends WooCommerceEnv {
-  RATE_LIMIT_KV: KVNamespace;
-}
+export const prerender = false;
 
 interface CheckoutPayload {
   items: { productId: number; quantity: number; unitPrice: number; name: string }[];
@@ -24,7 +23,8 @@ interface CheckoutPayload {
   };
 }
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
+  const env = locals.runtime.env;
   const ip = clientIp(request);
   const withinLimit = await checkRateLimit(env.RATE_LIMIT_KV, `checkout:${ip}`, 10, 600);
   if (!withinLimit) {

@@ -1,0 +1,41 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ecommerce",
+  "compatibility_date": "2026-07-19",
+  "compatibility_flags": ["global_fetch_strictly_public", "nodejs_compat"],
+  "main": "./dist/_worker.js/index.js",
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist"
+  },
+  "observability": {
+    "enabled": true
+  },
+  // KV namespace used by the rate limiter in src/lib/security.ts. The id
+  // below is this project's actual namespace id (not a secret — just an
+  // account-scoped identifier) so it's safe to commit.
+  "kv_namespaces": [
+    {
+      "binding": "RATE_LIMIT_KV",
+      "id": "2a7b38cac9044f24b57972098f2269e4"
+    }
+  ],
+  // Non-secret values only. Committing this file means it OVERWRITES
+  // whatever is set in the Cloudflare dashboard on every deploy, so real
+  // secrets (WOOCOMMERCE_CONSUMER_KEY/SECRET, TURNSTILE_SECRET_KEY,
+  // CONTACT_TO_EMAIL/FROM_EMAIL if considered sensitive) must be set with
+  // `wrangler secret put <NAME>` instead — see docs/DEPLOYMENT.md.
+  "vars": {
+    "PUBLIC_WORDPRESS_API_URL": "https://ecommercegoods.co.za/wp-json/wp/v2",
+    "PUBLIC_WOOCOMMERCE_API_URL": "https://ecommercegoods.co.za/wp-json/wc/v3",
+    "PUBLIC_R2_VIDEO_BASE_URL": "https://videos.ecommercegoods.co.za",
+    "PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAAD4-jKjuYU7BkF8O"
+  },
+  // This Worker IS the storefront — it's bound directly to /store/* on the
+  // primary domain instead of a subdomain (see docs/DEPLOYMENT.md for why).
+  // No separate proxy Worker is needed.
+  "routes": [
+    { "pattern": "ecommercegoods.co.za/store", "zone_name": "ecommercegoods.co.za" },
+    { "pattern": "ecommercegoods.co.za/store/*", "zone_name": "ecommercegoods.co.za" }
+  ]
+}
