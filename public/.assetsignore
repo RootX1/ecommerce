@@ -1,0 +1,4 @@
+# Cloudflare's build pipeline (wrangler) expects this file to exist for
+# Astro/Workers-Assets deployments. It works like .gitignore, but for
+# which files under `public/` are excluded from being served as static
+# assets. Nothing needs excluding here yet.
