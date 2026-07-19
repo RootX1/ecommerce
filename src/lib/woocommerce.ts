@@ -30,12 +30,42 @@ async function wooFetch<T>(env: WooCommerceEnv, path: string, init: RequestInit 
   return res.json() as Promise<T>;
 }
 
+export interface WooProduct {
+  id: number;
+  name: string;
+  slug: string;
+  price: string;
+  regular_price: string;
+  average_rating: string;
+  rating_count: number;
+  images: { src: string }[];
+  categories: { id: number; name: string; slug: string }[];
+  meta_data: { key: string; value: unknown }[];
+}
+
 export function listProducts(env: WooCommerceEnv, params: URLSearchParams = new URLSearchParams()) {
-  return wooFetch(env, `/products?${params.toString()}`);
+  return wooFetch<WooProduct[]>(env, `/products?${params.toString()}`);
 }
 
 export function getProduct(env: WooCommerceEnv, id: string | number) {
-  return wooFetch(env, `/products/${id}`);
+  return wooFetch<WooProduct>(env, `/products/${id}`);
+}
+
+export async function getProductBySlug(env: WooCommerceEnv, slug: string): Promise<WooProduct | undefined> {
+  const products = await wooFetch<WooProduct[]>(env, `/products?slug=${encodeURIComponent(slug)}`);
+  return products[0];
+}
+
+export interface WooProductCategory {
+  id: number;
+  name: string;
+  slug: string;
+  count: number;
+}
+
+export function listProductCategories(env: WooCommerceEnv) {
+  const params = new URLSearchParams({ per_page: '100', hide_empty: 'true' });
+  return wooFetch<WooProductCategory[]>(env, `/products/categories?${params.toString()}`);
 }
 
 export function listProductReviews(env: WooCommerceEnv, productId: string | number) {
@@ -63,7 +93,7 @@ export interface NewOrderInput {
   payment_method_title: string;
   set_paid: boolean;
   billing: Record<string, string>;
-  line_items: { product_id: number; quantity: number }[];
+  line_items: { product_id: number; quantity: number; meta_data?: { key: string; value: string }[] }[];
 }
 
 export function createOrder(env: WooCommerceEnv, input: NewOrderInput) {

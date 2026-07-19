@@ -1,11 +1,21 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import VideoFeed from '../components/VideoFeed.astro';
-import { mockProducts } from '../data/mockProducts';
+import { mockProducts, type Product } from '../data/mockProducts';
+import { listProducts } from '../lib/woocommerce';
+import { mapWooProducts } from '../lib/mapProduct';
 
-// TODO once WooCommerce is live: replace mockProducts with a build-time
-// fetch to /api/products (or fetch client-side for freshest inventory).
-const products = mockProducts;
+export const prerender = false;
+
+let products: Product[] = mockProducts;
+try {
+  const env = Astro.locals.runtime.env;
+  const params = new URLSearchParams({ per_page: '20', status: 'publish' });
+  const wooProducts = await listProducts(env, params);
+  if (wooProducts.length > 0) products = mapWooProducts(wooProducts);
+} catch {
+  // WooCommerce unreachable (e.g. local `astro dev` without bindings) — fall back to mock data.
+}
 ---
 
 <Layout title="Shop the feed">

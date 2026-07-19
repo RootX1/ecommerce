@@ -20,6 +20,15 @@
       "id": "2a7b38cac9044f24b57972098f2269e4"
     }
   ],
+  // R2 bucket for customer-uploaded personalisation designs (mugs, etc).
+  // Separate from the product-video bucket in docs/R2_SETUP.md — create it
+  // with: npx wrangler r2 bucket create ecommerce-uploads
+  "r2_buckets": [
+    {
+      "binding": "UPLOADS_BUCKET",
+      "bucket_name": "ecommerce-uploads"
+    }
+  ],
   // Non-secret values only. Committing this file means it OVERWRITES
   // whatever is set in the Cloudflare dashboard on every deploy, so real
   // secrets (WOOCOMMERCE_CONSUMER_KEY/SECRET, TURNSTILE_SECRET_KEY,
@@ -29,6 +38,7 @@
     "PUBLIC_WORDPRESS_API_URL": "https://ecommercegoods.co.za/wp-json/wp/v2",
     "PUBLIC_WOOCOMMERCE_API_URL": "https://ecommercegoods.co.za/wp-json/wc/v3",
     "PUBLIC_R2_VIDEO_BASE_URL": "https://videos.ecommercegoods.co.za",
+    "PUBLIC_UPLOADS_BASE_URL": "https://uploads.ecommercegoods.co.za",
     "PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAAD4-jKjuYU7BkF8O"
   },
   // This Worker IS the storefront — it's bound directly to /store/* on the

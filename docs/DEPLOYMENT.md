@@ -58,16 +58,26 @@ controls — so the repo is built to match it:
       name, number, bank name, and branch code (these are read live by
       `src/pages/api/checkout.ts` via the REST API, so updating them in
       wp-admin later needs no redeploy).
+- [ ] Create a **"Personalised"** product category (any name containing
+      "personalis(ed/ing)" works, or use slug `personalised` exactly) and
+      put mugs/personalised items in it — the product page automatically
+      shows a design-upload field for any product in that category (see
+      `src/lib/mapProduct.ts`).
 
 ## Phase 2 — Configure and deploy the Worker
 
 - [ ] Edit `wrangler.jsonc` at the repo root: set `name`, the real domain in
       `routes`, and the non-secret values under `vars` (WordPress/WooCommerce
-      URLs, R2 video base URL, Turnstile **site** key — site keys are meant
-      to be public, unlike secret keys).
+      URLs, R2 video base URL, R2 uploads base URL, Turnstile **site** key —
+      site keys are meant to be public, unlike secret keys).
 - [ ] Create the KV namespace if you haven't: `npx wrangler kv namespace create RATE_LIMIT_KV`
       (or via the dashboard), then put its `id` into `wrangler.jsonc`'s
       `kv_namespaces` entry.
+- [ ] Create the R2 bucket for customer design uploads (separate from the
+      video bucket in `docs/R2_SETUP.md`):
+      `npx wrangler r2 bucket create ecommerce-uploads` — then connect a
+      public custom domain to it (R2 → bucket → Settings → Public access)
+      and put that hostname into `wrangler.jsonc`'s `PUBLIC_UPLOADS_BASE_URL`.
 - [ ] Set the real **secrets** — these must NOT go in `wrangler.jsonc` (that
       file is committed to git) or the dashboard's plain env vars (which get
       overwritten by the next deploy). Use `wrangler secret put` instead,

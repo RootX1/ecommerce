@@ -1,16 +1,23 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { mockProducts } from '../../data/mockProducts';
+import { getProductBySlug as getMockProductBySlug, type Product } from '../../data/mockProducts';
 import { withBase } from '../../lib/base';
+import { getProductBySlug } from '../../lib/woocommerce';
+import { mapWooProduct } from '../../lib/mapProduct';
 
-export function getStaticPaths() {
-  return mockProducts.map((product) => ({
-    params: { slug: product.slug },
-    props: { product },
-  }));
+export const prerender = false;
+
+const slug = Astro.params.slug as string;
+let product: Product | undefined;
+
+try {
+  const env = Astro.locals.runtime.env;
+  const wooProduct = await getProductBySlug(env, slug);
+  if (wooProduct) product = mapWooProduct(wooProduct);
+} catch {
+  // WooCommerce unreachable (e.g. local `astro dev` without bindings) — fall back to mock data.
 }
-
-const { product } = Astro.props;
+if (!product) product = getMockProductBySlug(slug);
 if (!product) return Astro.redirect(withBase('/shop'));
 
 const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', currency: product.currency }).format(product.price);
@@ -26,15 +33,46 @@ const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', curre
       <p class="price">{priceFormatted}</p>
       <p class="rating">★ {product.rating.toFixed(1)} · {product.reviewCount} reviews</p>
 
+      {
+        product.requiresUpload && (
+          <div class="upload-section" data-upload-section>
+            <label class="upload-label" for="design-file">Upload your design</label>
+            <p class="upload-hint">Add the photo or artwork you'd like printed on this item (JPG, PNG, WEBP — max 8MB).</p>
+            <input type="file" id="design-file" accept="image/jpeg,image/png,image/webp,image/gif" data-design-input />
+            <div class="upload-preview" data-upload-preview hidden>
+              <img data-upload-preview-img alt="Your uploaded design" />
+              <span class="upload-status" data-upload-status></span>
+            </div>
+            <p class="upload-error" data-upload-error hidden></p>
+          </div>
+        )
+      }
+
       <div class="qty-row">
         <label for="qty">Qty</label>
         <input type="number" id="qty" value="1" min="1" max="10" />
       </div>
 
-      <button class="buy-now-btn" data-buy-now data-product-id={product.id} data-price={product.price} data-name={product.title} data-image={product.posterUrl}>
+      <button
+        class="buy-now-btn"
+        data-buy-now
+        data-product-id={product.id}
+        data-price={product.price}
+        data-name={product.title}
+        data-image={product.posterUrl}
+        data-requires-upload={product.requiresUpload ? 'true' : 'false'}
+      >
         Buy Now
       </button>
-      <button class="add-cart-btn" data-add-cart data-product-id={product.id} data-price={product.price} data-name={product.title} data-image={product.posterUrl}>
+      <button
+        class="add-cart-btn"
+        data-add-cart
+        data-product-id={product.id}
+        data-price={product.price}
+        data-name={product.title}
+        data-image={product.posterUrl}
+        data-requires-upload={product.requiresUpload ? 'true' : 'false'}
+      >
         Add to Cart
       </button>
     </div>
@@ -66,13 +104,56 @@ const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', curre
   .price {
     font-size: 18px;
     font-weight: 700;
-    color: var(--accent);
+    color: var(--secondary);
     margin: 0 0 4px;
   }
   .rating {
     color: var(--muted);
     font-size: 13px;
     margin: 0 0 16px;
+  }
+  .upload-section {
+    background: #111;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+  .upload-label {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  .upload-hint {
+    color: var(--muted);
+    font-size: 12px;
+    margin: 0 0 10px;
+  }
+  .upload-section input[type='file'] {
+    color: #fff;
+    font-size: 13px;
+    width: 100%;
+  }
+  .upload-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .upload-preview img {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  .upload-status {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .upload-error {
+    color: #ff6b6b;
+    font-size: 13px;
+    margin: 8px 0 0;
   }
   .qty-row {
     display: flex;
@@ -101,8 +182,8 @@ const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', curre
     margin-bottom: 10px;
   }
   .buy-now-btn {
-    background: var(--accent);
-    color: #fff;
+    background: var(--primary);
+    color: var(--primary-text);
   }
   .add-cart-btn {
     background: rgba(255, 255, 255, 0.1);
@@ -112,7 +193,43 @@ const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', curre
 
 <script>
   import { addToCart } from '../../lib/cart';
+  import { uploadDesign } from '../../lib/api';
   import { withBase } from '../../lib/base';
+
+  let uploadedDesignUrl: string | null = null;
+  let uploading = false;
+
+  const designInput = document.querySelector<HTMLInputElement>('[data-design-input]');
+  const previewEl = document.querySelector<HTMLElement>('[data-upload-preview]');
+  const previewImg = document.querySelector<HTMLImageElement>('[data-upload-preview-img]');
+  const statusEl = document.querySelector<HTMLElement>('[data-upload-status]');
+  const uploadErrorEl = document.querySelector<HTMLElement>('[data-upload-error]');
+
+  designInput?.addEventListener('change', async () => {
+    const file = designInput.files?.[0];
+    if (!file || !statusEl || !previewEl || !previewImg) return;
+
+    uploadedDesignUrl = null;
+    uploading = true;
+    if (uploadErrorEl) uploadErrorEl.hidden = true;
+    previewEl.hidden = false;
+    previewImg.src = URL.createObjectURL(file);
+    statusEl.textContent = 'Uploading...';
+
+    try {
+      const { url } = await uploadDesign(file);
+      uploadedDesignUrl = url;
+      statusEl.textContent = 'Uploaded ✓';
+    } catch (err) {
+      statusEl.textContent = '';
+      if (uploadErrorEl) {
+        uploadErrorEl.hidden = false;
+        uploadErrorEl.textContent = err instanceof Error ? err.message : 'Upload failed, please try again.';
+      }
+    } finally {
+      uploading = false;
+    }
+  });
 
   function readButtonProduct(btn: HTMLElement) {
     return {
@@ -121,6 +238,7 @@ const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', curre
       name: btn.dataset.name ?? '',
       unitPrice: Number(btn.dataset.price),
       imageUrl: btn.dataset.image ?? '',
+      designImageUrl: uploadedDesignUrl ?? undefined,
     };
   }
 
@@ -129,8 +247,29 @@ const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', curre
     return Math.max(1, Number(input?.value ?? 1));
   }
 
+  /** Blocks add-to-cart/buy-now until a required design upload is finished. */
+  function uploadIsMissing(btn: HTMLElement): boolean {
+    if (btn.dataset.requiresUpload !== 'true') return false;
+    if (uploading) {
+      if (uploadErrorEl) {
+        uploadErrorEl.hidden = false;
+        uploadErrorEl.textContent = 'Please wait for your design to finish uploading.';
+      }
+      return true;
+    }
+    if (!uploadedDesignUrl) {
+      if (uploadErrorEl) {
+        uploadErrorEl.hidden = false;
+        uploadErrorEl.textContent = 'Please upload your design before adding this item.';
+      }
+      return true;
+    }
+    return false;
+  }
+
   document.querySelector('[data-add-cart]')?.addEventListener('click', (e) => {
     const btn = e.currentTarget as HTMLElement;
+    if (uploadIsMissing(btn)) return;
     addToCart({ ...readButtonProduct(btn), quantity: currentQty() });
     btn.textContent = 'Added ✓';
     setTimeout(() => (btn.textContent = 'Add to Cart'), 1200);
@@ -138,6 +277,7 @@ const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', curre
 
   document.querySelector('[data-buy-now]')?.addEventListener('click', (e) => {
     const btn = e.currentTarget as HTMLElement;
+    if (uploadIsMissing(btn)) return;
     addToCart({ ...readButtonProduct(btn), quantity: currentQty() });
     window.location.href = withBase('/checkout');
   });

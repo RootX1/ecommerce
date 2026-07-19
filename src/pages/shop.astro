@@ -1,9 +1,33 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { mockProducts } from '../data/mockProducts';
+import { mockProducts, type Product } from '../data/mockProducts';
 import { withBase } from '../lib/base';
+import { listProducts, listProductCategories, type WooProductCategory } from '../lib/woocommerce';
+import { mapWooProducts } from '../lib/mapProduct';
 
-const categories = [...new Set(mockProducts.map((p) => p.category))];
+export const prerender = false;
+
+let products: Product[] = mockProducts;
+let categories: { name: string; slug: string }[] = [...new Set(mockProducts.map((p) => p.category))].map((name) => ({
+  name,
+  slug: name.toLowerCase().replace(/\s+/g, '-'),
+}));
+
+try {
+  const env = Astro.locals.runtime.env;
+  const [wooProducts, wooCategories] = await Promise.all([
+    listProducts(env, new URLSearchParams({ per_page: '50', status: 'publish' })),
+    listProductCategories(env),
+  ]);
+  if (wooProducts.length > 0) {
+    products = mapWooProducts(wooProducts);
+    categories = (wooCategories as WooProductCategory[])
+      .filter((c) => c.count > 0)
+      .map((c) => ({ name: c.name, slug: c.slug }));
+  }
+} catch {
+  // WooCommerce unreachable (e.g. local `astro dev` without bindings) — fall back to mock data.
+}
 ---
 
 <Layout title="Shop categories">
@@ -12,8 +36,8 @@ const categories = [...new Set(mockProducts.map((p) => p.category))];
     <div class="category-grid">
       {
         categories.map((category) => (
-          <a class="category-card" href={withBase(`/shop/${encodeURIComponent(category.toLowerCase().replace(/\s+/g, '-'))}`)}>
-            {category}
+          <a class="category-card" href={withBase(`/shop/${category.slug}`)}>
+            {category.name}
           </a>
         ))
       }
@@ -22,7 +46,7 @@ const categories = [...new Set(mockProducts.map((p) => p.category))];
     <h2>All products</h2>
     <div class="product-grid">
       {
-        mockProducts.map((product) => (
+        products.map((product) => (
           <a class="product-card" href={withBase(`/product/${product.slug}`)}>
             <img src={product.posterUrl} alt={product.title} loading="lazy" />
             <div class="product-card-info">
@@ -94,6 +118,6 @@ const categories = [...new Set(mockProducts.map((p) => p.category))];
     font-size: 13px;
     font-weight: 700;
     margin: 0;
-    color: var(--accent);
+    color: var(--secondary);
   }
 </style>

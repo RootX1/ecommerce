@@ -11,7 +11,7 @@ import { sanitizeText, checkRateLimit, clientIp } from '../../lib/security';
 export const prerender = false;
 
 interface CheckoutPayload {
-  items: { productId: number; quantity: number; unitPrice: number; name: string }[];
+  items: { productId: number; quantity: number; unitPrice: number; name: string; designImageUrl?: string }[];
   billing: {
     firstName: string;
     lastName: string;
@@ -65,10 +65,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
       payment_method_title: 'Direct Bank Transfer',
       set_paid: false,
       billing,
-      line_items: payload.items.map((item) => ({
-        product_id: item.productId,
-        quantity: item.quantity,
-      })),
+      line_items: payload.items.map((item) => {
+        // Only trust design URLs that are actually ours — never let a
+        // customer inject an arbitrary link into the order via this field.
+        const isOwnUpload = item.designImageUrl?.startsWith(env.PUBLIC_UPLOADS_BASE_URL);
+        return {
+          product_id: item.productId,
+          quantity: item.quantity,
+          meta_data: isOwnUpload ? [{ key: 'Design Upload', value: item.designImageUrl as string }] : undefined,
+        };
+      }),
     }),
     getBacsGateway(env).catch(() => null),
   ]);

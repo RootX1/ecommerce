@@ -11,6 +11,8 @@ export interface CartItem {
   unitPrice: number;
   quantity: number;
   imageUrl: string;
+  /** R2 URL of the customer's uploaded design, for personalised products. */
+  designImageUrl?: string;
 }
 
 export async function fetchProducts(params: { category?: string; search?: string; page?: number } = {}) {
@@ -53,6 +55,21 @@ export async function submitReview(input: SubmitReviewInput) {
   return res.json();
 }
 
+/** Uploads a customer's design file for a personalised product; returns its public R2 URL. */
+export async function uploadDesign(file: File): Promise<{ url: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(withBase('/api/upload-design'), {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) {
+    const err: { error?: string } = await res.json().catch(() => ({ error: 'Upload failed' }));
+    throw new Error(err.error ?? 'Upload failed');
+  }
+  return res.json();
+}
+
 export interface CheckoutBilling {
   firstName: string;
   lastName: string;
@@ -89,6 +106,7 @@ export async function startCheckout(items: CartItem[], billing: CheckoutBilling)
         quantity: i.quantity,
         unitPrice: i.unitPrice,
         name: i.name,
+        designImageUrl: i.designImageUrl,
       })),
       billing,
     }),

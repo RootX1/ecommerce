@@ -10,11 +10,13 @@ interface Env {
   WOOCOMMERCE_CONSUMER_KEY: string;
   WOOCOMMERCE_CONSUMER_SECRET: string;
   PUBLIC_R2_VIDEO_BASE_URL: string;
+  PUBLIC_UPLOADS_BASE_URL: string;
   PUBLIC_TURNSTILE_SITE_KEY: string;
   TURNSTILE_SECRET_KEY: string;
   CONTACT_TO_EMAIL: string;
   CONTACT_FROM_EMAIL: string;
   RATE_LIMIT_KV: KVNamespace;
+  UPLOADS_BUCKET: R2Bucket;
 }
 
 type Runtime = import('@astrojs/cloudflare').Runtime<Env>;

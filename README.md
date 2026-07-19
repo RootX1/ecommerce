@@ -47,8 +47,9 @@ src/
   layouts/        Layout.astro (shell + bottom nav + cart pill)
   pages/          index (feed), shop, shop/[category], product/[slug],
                   contact, account, cart, checkout, checkout/success
-  pages/api/      products, reviews, checkout, contact (server-rendered API routes)
-  lib/            woocommerce.ts (server), security.ts, api.ts (client), cart.ts, base.ts
+  pages/api/      products, reviews, checkout, contact, upload-design (server-rendered API routes)
+  lib/            woocommerce.ts (server), mapProduct.ts (WooCommerce → Product), security.ts,
+                  api.ts (client), cart.ts, base.ts
   data/           mockProducts.ts (placeholder catalog)
 wrangler.jsonc    Worker config: bindings, non-secret vars, /store/* routes
 scripts/          postbuild.mjs (fixes .assetsignore placement — see DEPLOYMENT.md)

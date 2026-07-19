@@ -1,18 +1,28 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { mockProducts } from '../../data/mockProducts';
+import { mockProducts, type Product } from '../../data/mockProducts';
 import { withBase } from '../../lib/base';
+import { listProducts, listProductCategories } from '../../lib/woocommerce';
+import { mapWooProducts } from '../../lib/mapProduct';
 
-export function getStaticPaths() {
-  const categories = [...new Set(mockProducts.map((p) => p.category))];
-  return categories.map((category) => ({
-    params: { category: category.toLowerCase().replace(/\s+/g, '-') },
-    props: { category },
-  }));
+export const prerender = false;
+
+const categorySlug = Astro.params.category as string;
+let category = categorySlug.replace(/-/g, ' ');
+let products: Product[] = mockProducts.filter((p) => p.category.toLowerCase().replace(/\s+/g, '-') === categorySlug);
+
+try {
+  const env = Astro.locals.runtime.env;
+  const categories = await listProductCategories(env);
+  const match = categories.find((c) => c.slug === categorySlug);
+  if (match) {
+    category = match.name;
+    const wooProducts = await listProducts(env, new URLSearchParams({ category: String(match.id), per_page: '50', status: 'publish' }));
+    products = mapWooProducts(wooProducts);
+  }
+} catch {
+  // WooCommerce unreachable (e.g. local `astro dev` without bindings) — fall back to mock data.
 }
-
-const { category } = Astro.props as { category: string };
-const products = mockProducts.filter((p) => p.category === category);
 ---
 
 <Layout title={category}>
@@ -81,6 +91,6 @@ const products = mockProducts.filter((p) => p.category === category);
     font-size: 13px;
     font-weight: 700;
     margin: 0;
-    color: var(--accent);
+    color: var(--secondary);
   }
 </style>

@@ -1,7 +1,16 @@
 :root {
   --bg: #000;
   --fg: #fff;
-  --accent: #fe2c55; /* TikTok-style accent */
+
+  /* Brand palette. Primary is dark enough for white text on top of it;
+     secondary is a bright accent for icons/badges/highlights only —
+     never a large background, and never paired with white text (use
+     --secondary-text, a dark color, whenever secondary is a background). */
+  --primary: #00406d;
+  --primary-text: #fff;
+  --secondary: #ebdc3a;
+  --secondary-text: #00406d;
+
   --muted: rgba(255, 255, 255, 0.7);
   --sheet-bg: #161823;
   --safe-bottom: env(safe-area-inset-bottom, 0px);

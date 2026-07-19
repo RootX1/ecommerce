@@ -50,6 +50,11 @@ import { withBase } from '../lib/base';
     color: var(--muted);
     margin: 0;
   }
+  .cart-item-design {
+    font-size: 12px;
+    color: var(--secondary);
+    margin: 2px 0 0;
+  }
   .qty-controls {
     display: flex;
     align-items: center;
@@ -85,8 +90,8 @@ import { withBase } from '../lib/base';
   .checkout-btn {
     display: block;
     text-align: center;
-    background: var(--accent);
-    color: #fff;
+    background: var(--primary);
+    color: var(--primary-text);
     text-decoration: none;
     padding: 14px;
     border-radius: 8px;
@@ -132,6 +137,7 @@ import { withBase } from '../lib/base';
         <div class="cart-item-info">
           <p class="cart-item-name">${item.name}</p>
           <p class="cart-item-price">${formatZar(item.unitPrice)} × ${item.quantity}</p>
+          ${item.designImageUrl ? '<p class="cart-item-design">✓ Design uploaded</p>' : ''}
         </div>
         <div class="qty-controls">
           <button data-decrease>-</button>
