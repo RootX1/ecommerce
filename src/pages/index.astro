@@ -1,0 +1,13 @@
+---
+import Layout from '../layouts/Layout.astro';
+import VideoFeed from '../components/VideoFeed.astro';
+import { mockProducts } from '../data/mockProducts';
+
+// TODO once WooCommerce is live: replace mockProducts with a build-time
+// fetch to /api/products (or fetch client-side for freshest inventory).
+const products = mockProducts;
+---
+
+<Layout title="Shop the feed">
+  <VideoFeed products={products} />
+</Layout>

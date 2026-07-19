@@ -1,0 +1,137 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Checkout">
+  <div class="checkout-page">
+    <h1>Checkout</h1>
+    <div class="order-summary" data-order-summary></div>
+
+    <form class="checkout-form" data-checkout-form>
+      <div class="field-row">
+        <input type="text" name="firstName" placeholder="First name" required maxlength="60" />
+        <input type="text" name="lastName" placeholder="Last name" required maxlength="60" />
+      </div>
+      <input type="email" name="email" placeholder="Email" required maxlength="120" />
+      <input type="tel" name="phone" placeholder="Phone number" required maxlength="30" />
+      <input type="text" name="address1" placeholder="Street address" required maxlength="200" />
+      <div class="field-row">
+        <input type="text" name="city" placeholder="City" required maxlength="100" />
+        <input type="text" name="postcode" placeholder="Postal code" required maxlength="20" />
+      </div>
+
+      <button type="submit" class="pay-btn">Pay with PayFast</button>
+      <p class="checkout-error" data-checkout-error hidden></p>
+    </form>
+
+    <p class="secure-note">🔒 Payments are processed securely by PayFast. We never store your card details.</p>
+  </div>
+</Layout>
+
+<style>
+  .checkout-page {
+    padding: 16px 16px calc(16px + var(--nav-height));
+    overflow-y: auto;
+    height: 100%;
+  }
+  h1 {
+    font-size: 20px;
+  }
+  .order-summary {
+    background: #111;
+    border-radius: 10px;
+    padding: 12px;
+    margin: 12px 0;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .checkout-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .field-row {
+    display: flex;
+    gap: 10px;
+  }
+  .checkout-form input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 12px;
+    color: #fff;
+    font-size: 14px;
+    min-width: 0;
+  }
+  .pay-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 14px;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .pay-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .checkout-error {
+    color: #ff6b6b;
+    font-size: 13px;
+  }
+  .secure-note {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 16px;
+    text-align: center;
+  }
+</style>
+
+<script>
+  import { getCart, cartTotal } from '../lib/cart';
+  import { startCheckout, redirectToPayfast } from '../lib/api';
+
+  const summaryEl = document.querySelector<HTMLElement>('[data-order-summary]')!;
+  const form = document.querySelector<HTMLFormElement>('[data-checkout-form]')!;
+  const errorEl = document.querySelector<HTMLElement>('[data-checkout-error]')!;
+
+  function formatZar(amount: number): string {
+    return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(amount);
+  }
+
+  const cart = getCart();
+  if (cart.length === 0) {
+    window.location.href = '/cart';
+  } else {
+    summaryEl.innerHTML = `${cart.length} item(s) · Total: <strong>${formatZar(cartTotal(cart))}</strong>`;
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitBtn = form.querySelector<HTMLButtonElement>('.pay-btn')!;
+    submitBtn.disabled = true;
+    errorEl.hidden = true;
+
+    const formData = new FormData(form);
+    try {
+      const { payfastHost, fields } = await startCheckout(getCart(), {
+        firstName: String(formData.get('firstName') ?? ''),
+        lastName: String(formData.get('lastName') ?? ''),
+        email: String(formData.get('email') ?? ''),
+        phone: String(formData.get('phone') ?? ''),
+        address1: String(formData.get('address1') ?? ''),
+        city: String(formData.get('city') ?? ''),
+        postcode: String(formData.get('postcode') ?? ''),
+      });
+      redirectToPayfast(payfastHost, fields);
+    } catch (err) {
+      errorEl.hidden = false;
+      errorEl.textContent = err instanceof Error ? err.message : 'Checkout failed, please try again.';
+      submitBtn.disabled = false;
+    }
+  });
+</script>

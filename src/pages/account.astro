@@ -1,0 +1,112 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="My Account">
+  <div class="account-page">
+    <h1>My Account</h1>
+
+    <div class="account-tabs">
+      <button class="tab active" data-tab="orders">Orders</button>
+      <button class="tab" data-tab="wishlist">Wishlist</button>
+      <button class="tab" data-tab="reviews">My Reviews</button>
+      <button class="tab" data-tab="settings">Settings</button>
+    </div>
+
+    <div class="tab-panel" data-panel="orders">
+      <p class="hint">Order history is fetched from WooCommerce once you're signed in.</p>
+      <a class="signin-btn" href="/login">Sign in to view orders</a>
+    </div>
+
+    <div class="tab-panel" data-panel="wishlist" hidden>
+      <div data-wishlist-list class="wishlist-grid"></div>
+      <p class="hint" data-wishlist-empty hidden>Your wishlist is empty — heart a product in the feed to save it here.</p>
+    </div>
+
+    <div class="tab-panel" data-panel="reviews" hidden>
+      <p class="hint">Reviews you've submitted will appear here once signed in.</p>
+    </div>
+
+    <div class="tab-panel" data-panel="settings" hidden>
+      <p class="hint">Account settings (name, email, address, password) sync with your WooCommerce customer profile.</p>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .account-page {
+    padding: 16px 16px calc(16px + var(--nav-height));
+    overflow-y: auto;
+    height: 100%;
+  }
+  h1 {
+    font-size: 20px;
+  }
+  .account-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    margin: 12px 0;
+  }
+  .tab {
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    color: var(--muted);
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .tab.active {
+    background: var(--accent);
+    color: #fff;
+  }
+  .hint {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .signin-btn {
+    display: inline-block;
+    margin-top: 8px;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  .wishlist-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+</style>
+
+<script>
+  const tabs = document.querySelectorAll<HTMLElement>('.tab');
+  const panels = document.querySelectorAll<HTMLElement>('.tab-panel');
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      tabs.forEach((t) => t.classList.remove('active'));
+      tab.classList.add('active');
+      panels.forEach((p) => (p.hidden = p.dataset.panel !== tab.dataset.tab));
+    });
+  });
+
+  const WISHLIST_KEY = 'tiktok-shop-wishlist';
+  const wishlistList = document.querySelector<HTMLElement>('[data-wishlist-list]');
+  const wishlistEmpty = document.querySelector<HTMLElement>('[data-wishlist-empty]');
+  try {
+    const ids: string[] = JSON.parse(localStorage.getItem(WISHLIST_KEY) ?? '[]');
+    if (ids.length === 0 && wishlistEmpty) wishlistEmpty.hidden = false;
+    // Product lookup by id would come from /api/products in production;
+    // this placeholder just shows the saved ids until that's wired up.
+    if (wishlistList) {
+      wishlistList.innerHTML = ids.map((id) => `<div class="hint">Product #${id}</div>`).join('');
+    }
+  } catch {
+    // ignore malformed localStorage state
+  }
+</script>

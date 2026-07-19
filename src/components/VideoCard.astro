@@ -1,0 +1,139 @@
+---
+import type { Product } from '../data/mockProducts';
+import OverlayButtons from './OverlayButtons.astro';
+
+interface Props {
+  product: Product;
+  eager?: boolean;
+}
+
+const { product, eager = false } = Astro.props;
+const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', currency: product.currency }).format(product.price);
+const regularFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', currency: product.currency }).format(
+  product.regularPrice
+);
+---
+
+<section class="video-card" data-video-card data-product-id={product.id}>
+  <video
+    class="feed-video"
+    data-src={product.videoUrl}
+    src={eager ? product.videoUrl : undefined}
+    poster={product.posterUrl}
+    muted
+    loop
+    playsinline
+    preload={eager ? 'auto' : 'none'}
+  ></video>
+
+  <div class="scrim" aria-hidden="true"></div>
+
+  <div class="product-info">
+    <h2 class="title">{product.title}</h2>
+    <div class="price-row">
+      <span class="price">{priceFormatted}</span>
+      {product.discountPercent > 0 && (
+        <>
+          <span class="regular-price">{regularFormatted}</span>
+          <span class="discount-tag">-{product.discountPercent}%</span>
+        </>
+      )}
+    </div>
+    <div class="rating">★ {product.rating.toFixed(1)} · {product.reviewCount} reviews</div>
+  </div>
+
+  <OverlayButtons product={product} />
+
+  <button class="mute-toggle" data-action="mute-toggle" aria-label="Toggle sound" aria-pressed="true">
+    <span class="mute-icon" aria-hidden="true">🔇</span>
+  </button>
+</section>
+
+<style>
+  .video-card {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    background: #000;
+    overflow: hidden;
+  }
+
+  .feed-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    background: #000;
+  }
+
+  .scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0) 35%);
+    pointer-events: none;
+  }
+
+  .product-info {
+    position: absolute;
+    left: 12px;
+    right: 88px;
+    bottom: 96px;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  }
+
+  .title {
+    font-size: 17px;
+    margin: 0 0 6px;
+    font-weight: 600;
+  }
+
+  .price-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+
+  .price {
+    font-weight: 700;
+  }
+
+  .regular-price {
+    text-decoration: line-through;
+    opacity: 0.7;
+    font-size: 13px;
+  }
+
+  .discount-tag {
+    background: var(--accent);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .rating {
+    font-size: 13px;
+    opacity: 0.9;
+  }
+
+  .mute-toggle {
+    position: absolute;
+    top: 16px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    cursor: pointer;
+  }
+</style>

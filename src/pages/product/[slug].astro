@@ -1,0 +1,142 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { mockProducts } from '../../data/mockProducts';
+
+export function getStaticPaths() {
+  return mockProducts.map((product) => ({
+    params: { slug: product.slug },
+    props: { product },
+  }));
+}
+
+const { product } = Astro.props;
+if (!product) return Astro.redirect('/shop');
+
+const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', currency: product.currency }).format(product.price);
+---
+
+<Layout title={product.title}>
+  <div class="product-page">
+    <a class="back-link" href="/">← Back</a>
+    <video class="product-video" src={product.videoUrl} poster={product.posterUrl} controls playsinline></video>
+
+    <div class="product-details">
+      <h1>{product.title}</h1>
+      <p class="price">{priceFormatted}</p>
+      <p class="rating">★ {product.rating.toFixed(1)} · {product.reviewCount} reviews</p>
+
+      <div class="qty-row">
+        <label for="qty">Qty</label>
+        <input type="number" id="qty" value="1" min="1" max="10" />
+      </div>
+
+      <button class="buy-now-btn" data-buy-now data-product-id={product.id} data-price={product.price} data-name={product.title} data-image={product.posterUrl}>
+        Buy Now
+      </button>
+      <button class="add-cart-btn" data-add-cart data-product-id={product.id} data-price={product.price} data-name={product.title} data-image={product.posterUrl}>
+        Add to Cart
+      </button>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .product-page {
+    padding: 16px 16px calc(16px + var(--nav-height));
+    overflow-y: auto;
+    height: 100%;
+  }
+  .back-link {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+  }
+  .product-video {
+    width: 100%;
+    max-height: 50vh;
+    border-radius: 12px;
+    margin: 12px 0;
+    background: #000;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 8px;
+  }
+  .price {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0 0 4px;
+  }
+  .rating {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0 0 16px;
+  }
+  .qty-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .qty-row input {
+    width: 60px;
+    padding: 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+  }
+  .buy-now-btn,
+  .add-cart-btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 15px;
+    border: none;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+  .buy-now-btn {
+    background: var(--accent);
+    color: #fff;
+  }
+  .add-cart-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+</style>
+
+<script>
+  import { addToCart } from '../../lib/cart';
+
+  function readButtonProduct(btn: HTMLElement) {
+    return {
+      productId: Number(btn.dataset.productId),
+      slug: window.location.pathname.split('/').pop() ?? '',
+      name: btn.dataset.name ?? '',
+      unitPrice: Number(btn.dataset.price),
+      imageUrl: btn.dataset.image ?? '',
+    };
+  }
+
+  function currentQty(): number {
+    const input = document.getElementById('qty') as HTMLInputElement | null;
+    return Math.max(1, Number(input?.value ?? 1));
+  }
+
+  document.querySelector('[data-add-cart]')?.addEventListener('click', (e) => {
+    const btn = e.currentTarget as HTMLElement;
+    addToCart({ ...readButtonProduct(btn), quantity: currentQty() });
+    btn.textContent = 'Added ✓';
+    setTimeout(() => (btn.textContent = 'Add to Cart'), 1200);
+  });
+
+  document.querySelector('[data-buy-now]')?.addEventListener('click', (e) => {
+    const btn = e.currentTarget as HTMLElement;
+    addToCart({ ...readButtonProduct(btn), quantity: currentQty() });
+    window.location.href = '/checkout';
+  });
+</script>

@@ -1,0 +1,98 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { mockProducts } from '../data/mockProducts';
+
+const categories = [...new Set(mockProducts.map((p) => p.category))];
+---
+
+<Layout title="Shop categories">
+  <div class="shop-page">
+    <h1>Shop</h1>
+    <div class="category-grid">
+      {
+        categories.map((category) => (
+          <a class="category-card" href={`/shop/${encodeURIComponent(category.toLowerCase().replace(/\s+/g, '-'))}`}>
+            {category}
+          </a>
+        ))
+      }
+    </div>
+
+    <h2>All products</h2>
+    <div class="product-grid">
+      {
+        mockProducts.map((product) => (
+          <a class="product-card" href={`/product/${product.slug}`}>
+            <img src={product.posterUrl} alt={product.title} loading="lazy" />
+            <div class="product-card-info">
+              <p class="product-card-title">{product.title}</p>
+              <p class="product-card-price">
+                {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: product.currency }).format(product.price)}
+              </p>
+            </div>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .shop-page {
+    padding: 16px 16px calc(16px + var(--nav-height));
+    overflow-y: auto;
+    height: 100%;
+  }
+  h1 {
+    font-size: 20px;
+  }
+  h2 {
+    font-size: 16px;
+    margin-top: 24px;
+  }
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .category-card {
+    background: #1a1a1a;
+    border-radius: 10px;
+    padding: 16px;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .product-card {
+    color: #fff;
+    text-decoration: none;
+    background: #111;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .product-card img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    display: block;
+  }
+  .product-card-info {
+    padding: 8px;
+  }
+  .product-card-title {
+    font-size: 13px;
+    margin: 0 0 4px;
+  }
+  .product-card-price {
+    font-size: 13px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--accent);
+  }
+</style>

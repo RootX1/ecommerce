@@ -1,0 +1,94 @@
+---
+import type { Product } from '../data/mockProducts';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+---
+
+<div class="overlay-buttons">
+  <button class="action-btn wishlist-btn" data-action="wishlist" data-product-id={product.id} aria-pressed="false" aria-label="Add to wishlist">
+    <span class="icon heart" aria-hidden="true"></span>
+    <span class="count">Wishlist</span>
+  </button>
+
+  <button class="action-btn" data-action="reviews" data-product-id={product.id} aria-label="Open reviews">
+    <span class="icon message" aria-hidden="true"></span>
+    <span class="count">{product.reviewCount}</span>
+  </button>
+
+  <a class="action-btn" href={`/product/${product.slug}`} aria-label="View product page">
+    <span class="icon bag" aria-hidden="true"></span>
+    <span class="count">Buy</span>
+  </a>
+
+  <button class="action-btn" data-action="share" data-product-id={product.id} aria-label="Share this product">
+    <span class="icon share" aria-hidden="true"></span>
+    <span class="count">Share</span>
+  </button>
+</div>
+
+<style>
+  .overlay-buttons {
+    position: absolute;
+    right: 10px;
+    bottom: 96px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    z-index: 5;
+  }
+
+  .action-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    text-decoration: none;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .icon {
+    width: 32px;
+    height: 32px;
+    display: inline-block;
+    background: #fff;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+  }
+
+  .wishlist-btn[aria-pressed='true'] .icon {
+    background: var(--accent);
+  }
+
+  .icon.heart {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21s-7.5-4.7-10-9.3C.5 8 2.4 4.5 6 4.5c2 0 3.5 1 4 2.4.5-1.4 2-2.4 4-2.4 3.6 0 5.5 3.5 4 7.2C19.5 16.3 12 21 12 21z'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21s-7.5-4.7-10-9.3C.5 8 2.4 4.5 6 4.5c2 0 3.5 1 4 2.4.5-1.4 2-2.4 4-2.4 3.6 0 5.5 3.5 4 7.2C19.5 16.3 12 21 12 21z'/%3E%3C/svg%3E");
+  }
+  .icon.message {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 4h16v11H8l-4 4z'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 4h16v11H8l-4 4z'/%3E%3C/svg%3E");
+  }
+  .icon.bag {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 7V6a5 5 0 0110 0v1h3l1 14H3L4 7zm2 0h6V6a3 3 0 00-6 0z'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 7V6a5 5 0 0110 0v1h3l1 14H3L4 7zm2 0h6V6a3 3 0 00-6 0z'/%3E%3C/svg%3E");
+  }
+  .icon.share {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='18' cy='5' r='3'/%3E%3Ccircle cx='6' cy='12' r='3'/%3E%3Ccircle cx='18' cy='19' r='3'/%3E%3Cpath d='M8.6 10.6l6.8-3.8M8.6 13.4l6.8 3.8' stroke='%23fff' stroke-width='2'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='18' cy='5' r='3'/%3E%3Ccircle cx='6' cy='12' r='3'/%3E%3Ccircle cx='18' cy='19' r='3'/%3E%3Cpath d='M8.6 10.6l6.8-3.8M8.6 13.4l6.8 3.8' stroke='%23fff' stroke-width='2'/%3E%3C/svg%3E");
+  }
+</style>

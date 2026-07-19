@@ -1,0 +1,114 @@
+---
+// Single shared share sheet, populated per-product by src/scripts/feed.js.
+---
+
+<div class="share-sheet-backdrop" data-share-backdrop hidden>
+  <div class="share-sheet" data-share-sheet role="dialog" aria-modal="true" aria-labelledby="share-sheet-title">
+    <div class="sheet-handle" data-share-close></div>
+    <header class="sheet-header">
+      <h2 id="share-sheet-title">Share</h2>
+      <button class="close-btn" data-share-close aria-label="Close share menu">✕</button>
+    </header>
+
+    <div class="share-options">
+      <a class="share-option" data-share-whatsapp target="_blank" rel="noopener noreferrer">
+        <span class="share-icon whatsapp" aria-hidden="true"></span>
+        WhatsApp
+      </a>
+      <a class="share-option" data-share-messenger target="_blank" rel="noopener noreferrer">
+        <span class="share-icon messenger" aria-hidden="true"></span>
+        Messenger
+      </a>
+      <a class="share-option" data-share-email>
+        <span class="share-icon email" aria-hidden="true"></span>
+        Email
+      </a>
+      <button class="share-option" data-share-copy type="button">
+        <span class="share-icon link" aria-hidden="true"></span>
+        Copy link
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .share-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 50;
+    display: flex;
+    align-items: flex-end;
+  }
+  .share-sheet-backdrop[hidden] {
+    display: none;
+  }
+  .share-sheet {
+    background: var(--sheet-bg);
+    color: #fff;
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    padding: 8px 16px calc(20px + var(--safe-bottom));
+  }
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    margin: 4px auto 8px;
+    cursor: pointer;
+  }
+  .sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .sheet-header h2 {
+    font-size: 16px;
+    margin: 0;
+  }
+  .close-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .share-options {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    text-align: center;
+  }
+  .share-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: #fff;
+    text-decoration: none;
+    font-size: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  .share-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: block;
+  }
+  .share-icon.whatsapp {
+    background: #25d366;
+  }
+  .share-icon.messenger {
+    background: #006aff;
+  }
+  .share-icon.email {
+    background: #6b7280;
+  }
+  .share-icon.link {
+    background: #444;
+  }
+</style>

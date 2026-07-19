@@ -1,0 +1,219 @@
+---
+// Single shared bottom-sheet instance, reused for whichever product is
+// currently active in the feed. Content is populated client-side by
+// src/scripts/feed.js so this stays one DOM node instead of one per video.
+---
+
+<div class="review-sheet-backdrop" data-review-backdrop hidden>
+  <div class="review-sheet" data-review-sheet role="dialog" aria-modal="true" aria-labelledby="review-sheet-title">
+    <div class="sheet-handle" data-review-close></div>
+    <header class="sheet-header">
+      <h2 id="review-sheet-title">Reviews</h2>
+      <button class="close-btn" data-review-close aria-label="Close reviews">✕</button>
+    </header>
+
+    <div class="rating-summary" data-review-summary></div>
+
+    <div class="review-list" data-review-list>
+      <p class="empty-state" data-review-empty hidden>No reviews yet — be the first!</p>
+    </div>
+
+    <form class="review-form" data-review-form>
+      <div class="star-input" data-star-input role="radiogroup" aria-label="Rating">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button type="button" class="star" data-star-value={n} aria-label={`${n} star`}>★</button>
+        ))}
+        <input type="hidden" name="rating" data-rating-value value="0" />
+      </div>
+      <input type="text" name="name" placeholder="Your name" required maxlength="100" />
+      <input type="email" name="email" placeholder="Your email" required maxlength="120" />
+      <textarea name="text" placeholder="Share your experience..." required maxlength="2000" rows="3"></textarea>
+
+      <!-- Honeypot: hidden from real users via CSS, bots tend to fill every field -->
+      <div class="hp-field" aria-hidden="true">
+        <label for="website">Website</label>
+        <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" />
+      </div>
+
+      <button type="submit" class="submit-btn">Post review</button>
+      <p class="form-error" data-review-error hidden></p>
+    </form>
+  </div>
+</div>
+
+<style>
+  .review-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 50;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .review-sheet-backdrop[hidden] {
+    display: none;
+  }
+
+  .review-sheet {
+    background: var(--sheet-bg);
+    color: #fff;
+    width: 100%;
+    max-height: 80vh;
+    border-radius: 16px 16px 0 0;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 16px calc(16px + var(--safe-bottom));
+    transform: translateY(0);
+    transition: transform 0.25s ease;
+  }
+
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    margin: 4px auto 8px;
+    cursor: pointer;
+  }
+
+  .sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .sheet-header h2 {
+    font-size: 16px;
+    margin: 0;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  .rating-summary {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .review-list {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 60px;
+    margin-bottom: 12px;
+  }
+
+  .review-item {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .review-item .review-author {
+    font-weight: 600;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .verified-badge {
+    font-size: 10px;
+    background: #12b76a;
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 8px;
+  }
+
+  .review-item .review-stars {
+    color: #ffb700;
+    font-size: 12px;
+  }
+
+  .review-item .review-text {
+    font-size: 13px;
+    color: #eee;
+    margin-top: 4px;
+  }
+
+  .empty-state {
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+    padding: 20px 0;
+  }
+
+  .review-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 12px;
+  }
+
+  .star-input {
+    display: flex;
+    gap: 4px;
+  }
+
+  .star {
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .star.selected {
+    color: #ffb700;
+  }
+
+  .review-form input[type='text'],
+  .review-form input[type='email'],
+  .review-form textarea {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 10px;
+    color: #fff;
+    font-size: 14px;
+    resize: none;
+  }
+
+  .hp-field {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .submit-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .form-error {
+    color: #ff6b6b;
+    font-size: 13px;
+    margin: 0;
+  }
+</style>

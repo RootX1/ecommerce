@@ -1,0 +1,65 @@
+---
+import BottomNav from '../components/BottomNav.astro';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'TikTok-style video shopping, made in Cape Town.' } = Astro.props;
+const recaptchaSiteKey = import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#000000" />
+    {recaptchaSiteKey && <meta name="recaptcha-site-key" content={recaptchaSiteKey} />}
+    {recaptchaSiteKey && <script is:inline defer src={`https://www.google.com/recaptcha/api.js?render=${recaptchaSiteKey}`}></script>}
+  </head>
+  <body>
+    <div class="app-shell">
+      <main class="app-main">
+        <slot />
+      </main>
+      <a href="/cart" class="cart-pill" data-cart-pill aria-label="View cart">
+        🛒 <span data-cart-count>0</span>
+      </a>
+      <BottomNav />
+    </div>
+
+    <script>
+      import { getCart, cartCount } from '../lib/cart';
+
+      function updateCartPill() {
+        const countEl = document.querySelector('[data-cart-count]');
+        if (countEl) countEl.textContent = String(cartCount(getCart()));
+      }
+      window.addEventListener('cart:updated', updateCartPill);
+      updateCartPill();
+    </script>
+  </body>
+</html>
+
+<style>
+  .cart-pill {
+    position: fixed;
+    top: calc(12px + env(safe-area-inset-top, 0px));
+    right: 12px;
+    z-index: 30;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+</style>

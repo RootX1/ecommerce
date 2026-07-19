@@ -1,0 +1,115 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Contact us">
+  <div class="contact-page">
+    <h1>Contact us</h1>
+    <p class="intro">Based in Cape Town, South Africa. Questions about an order or a custom print? Send us a message.</p>
+
+    <form class="contact-form" data-contact-form>
+      <input type="text" name="name" placeholder="Your name" required maxlength="100" />
+      <input type="email" name="email" placeholder="Your email" required maxlength="120" />
+      <textarea name="message" placeholder="How can we help?" required maxlength="2000" rows="5"></textarea>
+
+      <!-- Honeypot -->
+      <div class="hp-field" aria-hidden="true">
+        <label for="company">Company</label>
+        <input type="text" id="company" name="company" tabindex="-1" autocomplete="off" />
+      </div>
+
+      <button type="submit">Send message</button>
+      <p class="form-status" data-contact-status hidden></p>
+    </form>
+
+    <div class="business-info">
+      <p><strong>Email:</strong> orders@yourdomain.co.za</p>
+      <p><strong>Location:</strong> Cape Town, South Africa</p>
+      <p><strong>Hours:</strong> Mon–Fri, 9:00–17:00 SAST</p>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .contact-page {
+    padding: 16px 16px calc(16px + var(--nav-height));
+    overflow-y: auto;
+    height: 100%;
+  }
+  h1 {
+    font-size: 20px;
+  }
+  .intro {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 16px 0;
+  }
+  .contact-form input,
+  .contact-form textarea {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 12px;
+    color: #fff;
+    font-size: 14px;
+    resize: none;
+  }
+  .hp-field {
+    position: absolute;
+    left: -9999px;
+  }
+  button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .form-status {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .business-info p {
+    font-size: 13px;
+    color: var(--muted);
+  }
+</style>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>('[data-contact-form]');
+  const status = document.querySelector<HTMLElement>('[data-contact-status]');
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!status) return;
+    const formData = new FormData(form);
+
+    // Honeypot check client-side too; the real enforcement happens
+    // server-side in /api/contact once that endpoint is wired to WordPress.
+    if (String(formData.get('company') ?? '').trim().length > 0) {
+      return;
+    }
+
+    status.hidden = false;
+    status.textContent = 'Sending...';
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.fromEntries(formData)),
+      });
+      if (!res.ok) throw new Error('Failed to send');
+      status.textContent = 'Thanks — we’ll be in touch shortly.';
+      form.reset();
+    } catch {
+      status.textContent = 'Something went wrong. Please try again or email us directly.';
+    }
+  });
+</script>

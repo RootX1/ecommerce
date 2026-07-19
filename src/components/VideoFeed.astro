@@ -1,0 +1,340 @@
+---
+import type { Product } from '../data/mockProducts';
+import VideoCard from './VideoCard.astro';
+import ReviewModal from './ReviewModal.astro';
+import ShareModal from './ShareModal.astro';
+
+interface Props {
+  products: Product[];
+}
+
+const { products } = Astro.props;
+
+// Reviews/ratings needed client-side for the review sheet and share sheet,
+// serialized once instead of re-fetching from WooCommerce on every open.
+const feedData = products.map((p) => ({
+  id: p.id,
+  slug: p.slug,
+  title: p.title,
+  price: p.price,
+  currency: p.currency,
+  rating: p.rating,
+  reviewCount: p.reviewCount,
+  reviews: p.reviews,
+}));
+---
+
+<div class="video-feed" data-video-feed>
+  {products.map((product, i) => <VideoCard product={product} eager={i === 0} />)}
+</div>
+
+<ReviewModal />
+<ShareModal />
+
+<script type="application/json" id="feed-data" set:html={JSON.stringify(feedData)} />
+
+<style>
+  .video-feed {
+    height: 100%;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+</style>
+
+<script>
+  import { submitReview } from '../lib/api';
+
+  interface FeedProduct {
+    id: string;
+    slug: string;
+    title: string;
+    price: number;
+    currency: string;
+    rating: number;
+    reviewCount: number;
+    reviews: {
+      id: string;
+      author: string;
+      rating: number;
+      text: string;
+      verifiedPurchase: boolean;
+      createdAt: string;
+    }[];
+  }
+
+  const dataEl = document.getElementById('feed-data');
+  const products: FeedProduct[] = dataEl ? JSON.parse(dataEl.textContent || '[]') : [];
+  const productById = new Map(products.map((p) => [p.id, p]));
+
+  const WISHLIST_KEY = 'tiktok-shop-wishlist';
+  function getWishlist(): string[] {
+    try {
+      return JSON.parse(localStorage.getItem(WISHLIST_KEY) ?? '[]');
+    } catch {
+      return [];
+    }
+  }
+  function setWishlist(ids: string[]) {
+    localStorage.setItem(WISHLIST_KEY, JSON.stringify(ids));
+  }
+
+  const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-video-card]'));
+
+  let soundEnabled = false;
+
+  // Lazy-load + autoplay only the video currently in view; every other
+  // video stays paused with no source loaded to keep memory/bandwidth low.
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const card = entry.target as HTMLElement;
+        const video = card.querySelector('video')!;
+        if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
+          if (!video.src && video.dataset.src) video.src = video.dataset.src;
+          video.muted = !soundEnabled;
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+      }
+    },
+    { threshold: [0, 0.6, 1] }
+  );
+  cards.forEach((card) => observer.observe(card));
+
+  // Preload the next card's video once the current one is 60% visible.
+  const preloadObserver = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const idx = cards.indexOf(entry.target as HTMLElement);
+        const next = cards[idx + 1];
+        if (next) {
+          const nextVideo = next.querySelector('video')!;
+          if (!nextVideo.src && nextVideo.dataset.src) {
+            nextVideo.preload = 'auto';
+            nextVideo.src = nextVideo.dataset.src;
+          }
+        }
+      }
+    },
+    { threshold: 0.6 }
+  );
+  cards.forEach((card) => preloadObserver.observe(card));
+
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+
+    const muteBtn = target.closest<HTMLElement>('[data-action="mute-toggle"]');
+    if (muteBtn) {
+      soundEnabled = !soundEnabled;
+      cards.forEach((card) => {
+        const video = card.querySelector('video');
+        if (video) video.muted = !soundEnabled;
+      });
+      muteBtn.setAttribute('aria-pressed', String(soundEnabled));
+      muteBtn.textContent = soundEnabled ? '🔊' : '🔇';
+      return;
+    }
+
+    const wishlistBtn = target.closest<HTMLElement>('[data-action="wishlist"]');
+    if (wishlistBtn) {
+      const id = wishlistBtn.dataset.productId!;
+      const wishlist = getWishlist();
+      const idx = wishlist.indexOf(id);
+      if (idx >= 0) {
+        wishlist.splice(idx, 1);
+        wishlistBtn.setAttribute('aria-pressed', 'false');
+      } else {
+        wishlist.push(id);
+        wishlistBtn.setAttribute('aria-pressed', 'true');
+      }
+      setWishlist(wishlist);
+      return;
+    }
+
+    const reviewsBtn = target.closest<HTMLElement>('[data-action="reviews"]');
+    if (reviewsBtn) {
+      openReviewSheet(reviewsBtn.dataset.productId!);
+      return;
+    }
+
+    const shareBtn = target.closest<HTMLElement>('[data-action="share"]');
+    if (shareBtn) {
+      openShareSheet(shareBtn.dataset.productId!);
+      return;
+    }
+  });
+
+  // Reflect saved wishlist state on load.
+  const wishlist = getWishlist();
+  document.querySelectorAll<HTMLElement>('[data-action="wishlist"]').forEach((btn) => {
+    if (wishlist.includes(btn.dataset.productId!)) btn.setAttribute('aria-pressed', 'true');
+  });
+
+  // --- Review bottom sheet -------------------------------------------------
+  const reviewBackdrop = document.querySelector<HTMLElement>('[data-review-backdrop]');
+  const reviewList = document.querySelector<HTMLElement>('[data-review-list]');
+  const reviewSummary = document.querySelector<HTMLElement>('[data-review-summary]');
+  const reviewForm = document.querySelector<HTMLFormElement>('[data-review-form]');
+  const reviewError = document.querySelector<HTMLElement>('[data-review-error]');
+  const ratingInput = document.querySelector<HTMLInputElement>('[data-rating-value]');
+  const stars = Array.from(document.querySelectorAll<HTMLElement>('.star'));
+  let activeProductId: string | null = null;
+
+  function renderStars(container: HTMLElement, rating: number) {
+    container.textContent = '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating));
+  }
+
+  function openReviewSheet(productId: string) {
+    const product = productById.get(productId);
+    if (!product || !reviewBackdrop || !reviewList || !reviewSummary) return;
+    activeProductId = productId;
+
+    reviewSummary.innerHTML = '';
+    const avg = document.createElement('span');
+    renderStars(avg, product.rating);
+    avg.className = 'review-stars';
+    reviewSummary.appendChild(avg);
+    reviewSummary.appendChild(document.createTextNode(` ${product.rating.toFixed(1)} · ${product.reviewCount} reviews`));
+
+    reviewList.innerHTML = '';
+    if (product.reviews.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'empty-state';
+      empty.textContent = 'No reviews yet — be the first!';
+      reviewList.appendChild(empty);
+    } else {
+      for (const r of product.reviews) {
+        const item = document.createElement('div');
+        item.className = 'review-item';
+        const author = document.createElement('div');
+        author.className = 'review-author';
+        author.textContent = r.author;
+        if (r.verifiedPurchase) {
+          const badge = document.createElement('span');
+          badge.className = 'verified-badge';
+          badge.textContent = 'Verified';
+          author.appendChild(badge);
+        }
+        const starsEl = document.createElement('div');
+        renderStars(starsEl, r.rating);
+        starsEl.className = 'review-stars';
+        const text = document.createElement('div');
+        text.className = 'review-text';
+        text.textContent = r.text; // textContent, never innerHTML — no HTML injection from review text
+        item.append(author, starsEl, text);
+        reviewList.appendChild(item);
+      }
+    }
+
+    reviewBackdrop.hidden = false;
+  }
+
+  function closeReviewSheet() {
+    if (reviewBackdrop) reviewBackdrop.hidden = true;
+    reviewForm?.reset();
+    stars.forEach((s) => s.classList.remove('selected'));
+    if (ratingInput) ratingInput.value = '0';
+    if (reviewError) reviewError.hidden = true;
+  }
+
+  document.querySelectorAll('[data-review-close]').forEach((el) =>
+    el.addEventListener('click', (e) => {
+      if (e.target === el) closeReviewSheet();
+    })
+  );
+  reviewBackdrop?.addEventListener('click', (e) => {
+    if (e.target === reviewBackdrop) closeReviewSheet();
+  });
+
+  stars.forEach((star) => {
+    star.addEventListener('click', () => {
+      const value = Number(star.dataset.starValue);
+      if (ratingInput) ratingInput.value = String(value);
+      stars.forEach((s) => s.classList.toggle('selected', Number(s.dataset.starValue) <= value));
+    });
+  });
+
+  reviewForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!activeProductId || !reviewError) return;
+    const formData = new FormData(reviewForm);
+    const rating = Number(formData.get('rating'));
+    if (!rating) {
+      reviewError.hidden = false;
+      reviewError.textContent = 'Please select a star rating.';
+      return;
+    }
+
+    const submitBtn = reviewForm.querySelector<HTMLButtonElement>('.submit-btn');
+    if (submitBtn) submitBtn.disabled = true;
+    reviewError.hidden = true;
+
+    try {
+      const recaptchaToken = await getRecaptchaToken('submit_review');
+      await submitReview({
+        productId: Number(activeProductId),
+        rating,
+        text: String(formData.get('text') ?? ''),
+        name: String(formData.get('name') ?? ''),
+        email: String(formData.get('email') ?? ''),
+        recaptchaToken,
+        website: String(formData.get('website') ?? ''),
+        isFirstTimeReviewer: true,
+      });
+      closeReviewSheet();
+    } catch (err) {
+      reviewError.hidden = false;
+      reviewError.textContent = err instanceof Error ? err.message : 'Something went wrong, please try again.';
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  });
+
+  async function getRecaptchaToken(action: string): Promise<string> {
+    const grecaptcha = (window as unknown as { grecaptcha?: { execute: (key: string, opts: { action: string }) => Promise<string> } })
+      .grecaptcha;
+    const siteKey = document.querySelector('meta[name="recaptcha-site-key"]')?.getAttribute('content');
+    if (!grecaptcha || !siteKey) return '';
+    return grecaptcha.execute(siteKey, { action });
+  }
+
+  // --- Share sheet ---------------------------------------------------------
+  const shareBackdrop = document.querySelector<HTMLElement>('[data-share-backdrop]');
+
+  function openShareSheet(productId: string) {
+    const product = productById.get(productId);
+    if (!product || !shareBackdrop) return;
+    const url = `${window.location.origin}/product/${product.slug}`;
+    const message = `Check out ${product.title} — buy now: ${url}`;
+
+    const whatsapp = shareBackdrop.querySelector<HTMLAnchorElement>('[data-share-whatsapp]');
+    const messenger = shareBackdrop.querySelector<HTMLAnchorElement>('[data-share-messenger]');
+    const email = shareBackdrop.querySelector<HTMLAnchorElement>('[data-share-email]');
+    const copyBtn = shareBackdrop.querySelector<HTMLButtonElement>('[data-share-copy]');
+
+    if (whatsapp) whatsapp.href = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    if (messenger) messenger.href = `https://www.facebook.com/dialog/send?link=${encodeURIComponent(url)}&app_id=YOUR_FB_APP_ID&redirect_uri=${encodeURIComponent(url)}`;
+    if (email) email.href = `mailto:?subject=${encodeURIComponent(product.title)}&body=${encodeURIComponent(message)}`;
+    if (copyBtn) {
+      copyBtn.onclick = async () => {
+        await navigator.clipboard.writeText(url);
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => (copyBtn.textContent = 'Copy link'), 1500);
+      };
+    }
+
+    shareBackdrop.hidden = false;
+  }
+
+  document.querySelectorAll('[data-share-close]').forEach((el) =>
+    el.addEventListener('click', (e) => {
+      if (e.target === el) shareBackdrop!.hidden = true;
+    })
+  );
+  shareBackdrop?.addEventListener('click', (e) => {
+    if (e.target === shareBackdrop) shareBackdrop.hidden = true;
+  });
+</script>
