@@ -239,6 +239,7 @@ const feedData = products.map((p) => ({
     stars.forEach((s) => s.classList.remove('selected'));
     if (ratingInput) ratingInput.value = '0';
     if (reviewError) reviewError.hidden = true;
+    resetTurnstile();
   }
 
   document.querySelectorAll('[data-review-close]').forEach((el) =>
@@ -274,17 +275,17 @@ const feedData = products.map((p) => ({
     reviewError.hidden = true;
 
     try {
-      const recaptchaToken = await getRecaptchaToken('submit_review');
       await submitReview({
         productId: Number(activeProductId),
         rating,
         text: String(formData.get('text') ?? ''),
         name: String(formData.get('name') ?? ''),
         email: String(formData.get('email') ?? ''),
-        recaptchaToken,
+        turnstileToken: String(formData.get('cf-turnstile-response') ?? ''),
         website: String(formData.get('website') ?? ''),
         isFirstTimeReviewer: true,
       });
+      resetTurnstile();
       closeReviewSheet();
     } catch (err) {
       reviewError.hidden = false;
@@ -294,12 +295,8 @@ const feedData = products.map((p) => ({
     }
   });
 
-  async function getRecaptchaToken(action: string): Promise<string> {
-    const grecaptcha = (window as unknown as { grecaptcha?: { execute: (key: string, opts: { action: string }) => Promise<string> } })
-      .grecaptcha;
-    const siteKey = document.querySelector('meta[name="recaptcha-site-key"]')?.getAttribute('content');
-    if (!grecaptcha || !siteKey) return '';
-    return grecaptcha.execute(siteKey, { action });
+  function resetTurnstile() {
+    (window as unknown as { turnstile?: { reset: () => void } }).turnstile?.reset();
   }
 
   // --- Share sheet ---------------------------------------------------------

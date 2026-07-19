@@ -2,6 +2,7 @@
 // Single shared bottom-sheet instance, reused for whichever product is
 // currently active in the feed. Content is populated client-side by
 // src/scripts/feed.js so this stays one DOM node instead of one per video.
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 ---
 
 <div class="review-sheet-backdrop" data-review-backdrop hidden>
@@ -34,6 +35,8 @@
         <label for="website">Website</label>
         <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" />
       </div>
+
+      {turnstileSiteKey && <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-appearance="interaction-only" />}
 
       <button type="submit" class="submit-btn">Post review</button>
       <p class="form-error" data-review-error hidden></p>
@@ -173,6 +176,13 @@
 
   .star.selected {
     color: #ffb700;
+  }
+
+  .cf-turnstile {
+    display: flex;
+    justify-content: center;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .review-form input[type='text'],

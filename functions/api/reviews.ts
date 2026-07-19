@@ -5,13 +5,13 @@ import {
   sanitizeText,
   containsLinkOrScript,
   honeypotTripped,
-  verifyRecaptcha,
+  verifyTurnstile,
   checkRateLimit,
   clientIp,
 } from '../../src/lib/security';
 
 interface Env extends WooCommerceEnv {
-  RECAPTCHA_SECRET_KEY: string;
+  TURNSTILE_SECRET_KEY: string;
   RATE_LIMIT_KV: KVNamespace;
 }
 
@@ -33,7 +33,7 @@ interface ReviewPayload {
   text: string;
   name: string;
   email: string;
-  recaptchaToken: string;
+  turnstileToken: string;
   website?: string; // honeypot — must stay empty
   isFirstTimeReviewer?: boolean;
 }
@@ -61,9 +61,9 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     return new Response(JSON.stringify({ error: 'Submission rejected' }), { status: 400 });
   }
 
-  // 3. reCAPTCHA v3.
-  const humanScore = await verifyRecaptcha(payload.recaptchaToken, env.RECAPTCHA_SECRET_KEY);
-  if (!humanScore) {
+  // 3. Cloudflare Turnstile.
+  const human = await verifyTurnstile(payload.turnstileToken, env.TURNSTILE_SECRET_KEY, ip);
+  if (!human) {
     return new Response(JSON.stringify({ error: 'Verification failed, please try again.' }), { status: 400 });
   }
 

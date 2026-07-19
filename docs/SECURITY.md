@@ -5,8 +5,8 @@
 The Astro frontend is fully static and never talks to WooCommerce directly.
 All writes (reviews, orders, contact messages) go through Cloudflare Pages
 Functions in `functions/api/*`, which hold the WooCommerce consumer
-key/secret, PayFast passphrase, and reCAPTCHA secret as **encrypted
-environment variables** — none of these ever reach the browser.
+key/secret and Turnstile secret as **encrypted environment variables** —
+none of these ever reach the browser.
 
 ## Input sanitization
 
@@ -52,7 +52,7 @@ environment variables** — none of these ever reach the browser.
 - Production: set the same variable names as **encrypted secrets** in the
   Cloudflare Pages project settings (Settings → Environment variables →
   "Encrypt"). Never commit real keys.
-- Rotate the WooCommerce Consumer Key/Secret and PayFast passphrase
+- Rotate the WooCommerce Consumer Key/Secret and Turnstile secret
   immediately if they are ever exposed in a log, screenshot, or commit.
 
 ## Reviews: verified purchase + moderation
@@ -68,13 +68,24 @@ environment variables** — none of these ever reach the browser.
 
 | Layer | Where | Detail |
 |---|---|---|
-| reCAPTCHA v3 | `src/lib/security.ts` (`verifyRecaptcha`) | Score threshold 0.5; loaded via `api.js?render=<sitekey>` in `Layout.astro` |
+| Cloudflare Turnstile | `src/lib/security.ts` (`verifyTurnstile`) | Widget rendered in `ReviewModal.astro` + `contact.astro` (`data-appearance="interaction-only"`); verified server-side against `challenges.cloudflare.com/turnstile/v0/siteverify`. Chosen over Google reCAPTCHA — see "Why Turnstile, not reCAPTCHA" below. |
 | Honeypot | `ReviewModal.astro`, `contact.astro` | Hidden `website`/`company` field; any value = bot |
 | Rate limiting | `checkRateLimit` (Cloudflare KV) | 5 reviews / 10 min / IP, 10 checkouts / 10 min / IP, 5 contact messages / 10 min / IP |
 | Link/script blocking | `containsLinkOrScript` | Rejects review/contact text containing URLs or `<script`/`javascript:` |
 | Moderation queue | WooCommerce reviews `status: hold` | First-time reviewers always held for manual approval |
 | Firewall | Cloudflare WAF | Add rate-limiting rules and known-spam-IP blocklists in the Cloudflare dashboard (see below) |
 | Alerting | Cloudflare + email | Configure a Cloudflare Notification for WAF rule triggers; wire a Worker alert to `CONTACT_TO_EMAIL` for repeated 429s if desired |
+
+### Why Turnstile, not reCAPTCHA
+
+Google has deprecated legacy reCAPTCHA v2/v3 in favor of reCAPTCHA
+Enterprise: management moved to Google Cloud Console, and Google's legal
+role shifted from Data Controller to Data Processor — which would require
+a signed Data Processing Agreement and privacy policy updates. Since this
+stack already runs entirely on Cloudflare (Pages, Workers, R2), Cloudflare
+Turnstile avoids all of that: it's free, privacy-preserving by design, and
+needs no separate Google Cloud project or billing account. Get a site
+key/secret key pair at Cloudflare dashboard → **Turnstile** → **Add site**.
 
 ### Cloudflare KV binding required
 

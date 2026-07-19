@@ -83,3 +83,25 @@ export function updateOrderStatus(env: WooCommerceEnv, orderId: string | number,
 export function getOrder(env: WooCommerceEnv, orderId: string | number) {
   return wooFetch(env, `/orders/${orderId}`);
 }
+
+export interface BacsAccountDetail {
+  account_name: string;
+  account_number: string;
+  bank_name: string;
+  sort_code: string;
+  iban: string;
+  bic: string;
+}
+
+export interface BacsGateway {
+  enabled: string;
+  settings: {
+    account_details?: { value: BacsAccountDetail[] };
+    instructions?: { value: string };
+  };
+}
+
+/** Reads the "Direct bank transfer" gateway's live settings (account details are managed in WP admin, not hardcoded here). */
+export function getBacsGateway(env: WooCommerceEnv) {
+  return wooFetch<BacsGateway>(env, '/payment_gateways/bacs');
+}

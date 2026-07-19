@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 ---
 
 <Layout title="Contact us">
@@ -17,6 +18,8 @@ import Layout from '../layouts/Layout.astro';
         <label for="company">Company</label>
         <input type="text" id="company" name="company" tabindex="-1" autocomplete="off" />
       </div>
+
+      {turnstileSiteKey && <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-appearance="interaction-only" />}
 
       <button type="submit">Send message</button>
       <p class="form-status" data-contact-status hidden></p>
@@ -58,6 +61,12 @@ import Layout from '../layouts/Layout.astro';
     color: #fff;
     font-size: 14px;
     resize: none;
+  }
+  .cf-turnstile {
+    display: flex;
+    justify-content: center;
+    max-width: 100%;
+    overflow: hidden;
   }
   .hp-field {
     position: absolute;
@@ -105,11 +114,18 @@ import Layout from '../layouts/Layout.astro';
       const res = await fetch(withBase('/api/contact'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(Object.fromEntries(formData)),
+        body: JSON.stringify({
+          name: String(formData.get('name') ?? ''),
+          email: String(formData.get('email') ?? ''),
+          message: String(formData.get('message') ?? ''),
+          company: String(formData.get('company') ?? ''),
+          turnstileToken: String(formData.get('cf-turnstile-response') ?? ''),
+        }),
       });
       if (!res.ok) throw new Error('Failed to send');
       status.textContent = 'Thanks — we’ll be in touch shortly.';
       form.reset();
+      (window as unknown as { turnstile?: { reset: () => void } }).turnstile?.reset();
     } catch {
       status.textContent = 'Something went wrong. Please try again or email us directly.';
     }

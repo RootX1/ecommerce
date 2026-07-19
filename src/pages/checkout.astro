@@ -20,11 +20,11 @@ import Layout from '../layouts/Layout.astro';
         <input type="text" name="postcode" placeholder="Postal code" required maxlength="20" />
       </div>
 
-      <button type="submit" class="pay-btn">Pay with PayFast</button>
+      <button type="submit" class="pay-btn">Place order</button>
       <p class="checkout-error" data-checkout-error hidden></p>
     </form>
 
-    <p class="secure-note">🔒 Payments are processed securely by PayFast. We never store your card details.</p>
+    <p class="secure-note">🏦 Payment is by direct bank transfer — you'll get the account details and your order reference on the next screen and by email.</p>
   </div>
 </Layout>
 
@@ -92,9 +92,11 @@ import Layout from '../layouts/Layout.astro';
 </style>
 
 <script>
-  import { getCart, cartTotal } from '../lib/cart';
-  import { startCheckout, redirectToPayfast } from '../lib/api';
+  import { getCart, cartTotal, clearCart } from '../lib/cart';
+  import { startCheckout } from '../lib/api';
   import { withBase } from '../lib/base';
+
+  const ORDER_STORAGE_KEY = 'tiktok-shop-last-order';
 
   const summaryEl = document.querySelector<HTMLElement>('[data-order-summary]')!;
   const form = document.querySelector<HTMLFormElement>('[data-checkout-form]')!;
@@ -119,7 +121,7 @@ import Layout from '../layouts/Layout.astro';
 
     const formData = new FormData(form);
     try {
-      const { payfastHost, fields } = await startCheckout(getCart(), {
+      const result = await startCheckout(getCart(), {
         firstName: String(formData.get('firstName') ?? ''),
         lastName: String(formData.get('lastName') ?? ''),
         email: String(formData.get('email') ?? ''),
@@ -128,7 +130,9 @@ import Layout from '../layouts/Layout.astro';
         city: String(formData.get('city') ?? ''),
         postcode: String(formData.get('postcode') ?? ''),
       });
-      redirectToPayfast(payfastHost, fields);
+      sessionStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(result));
+      clearCart();
+      window.location.href = withBase('/checkout/success');
     } catch (err) {
       errorEl.hidden = false;
       errorEl.textContent = err instanceof Error ? err.message : 'Checkout failed, please try again.';

@@ -35,7 +35,7 @@ export interface SubmitReviewInput {
   text: string;
   name: string;
   email: string;
-  recaptchaToken: string;
+  turnstileToken: string;
   website?: string;
   isFirstTimeReviewer?: boolean;
 }
@@ -63,7 +63,23 @@ export interface CheckoutBilling {
   postcode: string;
 }
 
-export async function startCheckout(items: CartItem[], billing: CheckoutBilling) {
+export interface BacsAccountDetail {
+  account_name: string;
+  account_number: string;
+  bank_name: string;
+  sort_code: string;
+  iban: string;
+  bic: string;
+}
+
+export interface CheckoutResult {
+  orderId: number;
+  total: number;
+  instructions: string;
+  accountDetails: BacsAccountDetail[];
+}
+
+export async function startCheckout(items: CartItem[], billing: CheckoutBilling): Promise<CheckoutResult> {
   const res = await fetch(withBase('/api/checkout'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -81,21 +97,5 @@ export async function startCheckout(items: CartItem[], billing: CheckoutBilling)
     const err: { error?: string } = await res.json().catch(() => ({ error: 'Checkout failed' }));
     throw new Error(err.error ?? 'Checkout failed');
   }
-  return res.json() as Promise<{ orderId: number; payfastHost: string; fields: Record<string, string> }>;
-}
-
-/** Submits the PayFast fields via a real HTML form POST (required by PayFast, not fetch/XHR). */
-export function redirectToPayfast(payfastHost: string, fields: Record<string, string>) {
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.action = payfastHost;
-  for (const [key, value] of Object.entries(fields)) {
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = key;
-    input.value = value;
-    form.appendChild(input);
-  }
-  document.body.appendChild(form);
-  form.submit();
+  return res.json();
 }

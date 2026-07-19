@@ -2,18 +2,27 @@
 // Spam-protected contact form handler. Sends via MailChannels, which is
 // free to use from Cloudflare Workers/Pages once a DNS lockdown TXT record
 // is added for the sending domain (see docs/SECURITY.md).
-import { sanitizeText, containsLinkOrScript, honeypotTripped, checkRateLimit, clientIp } from '../../src/lib/security';
+import {
+  sanitizeText,
+  containsLinkOrScript,
+  honeypotTripped,
+  verifyTurnstile,
+  checkRateLimit,
+  clientIp,
+} from '../../src/lib/security';
 
 interface Env {
   RATE_LIMIT_KV: KVNamespace;
   CONTACT_TO_EMAIL: string;
   CONTACT_FROM_EMAIL: string;
+  TURNSTILE_SECRET_KEY: string;
 }
 
 interface ContactPayload {
   name: string;
   email: string;
   message: string;
+  turnstileToken: string;
   company?: string; // honeypot
 }
 
@@ -33,6 +42,11 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   if (honeypotTripped(payload.company)) {
     return new Response(JSON.stringify({ error: 'Submission rejected' }), { status: 400 });
+  }
+
+  const human = await verifyTurnstile(payload.turnstileToken, env.TURNSTILE_SECRET_KEY, ip);
+  if (!human) {
+    return new Response(JSON.stringify({ error: 'Verification failed, please try again.' }), { status: 400 });
   }
 
   const name = sanitizeText(payload.name, 100);

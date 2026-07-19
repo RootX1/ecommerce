@@ -1,16 +1,13 @@
 // POST /api/checkout
-// Creates a pending WooCommerce order, then returns the signed PayFast
-// redirect fields. The frontend posts these fields to PayFast directly.
-import { createOrder, type WooCommerceEnv } from '../../src/lib/woocommerce';
-import { buildPayfastPaymentFields, type PayfastConfig } from '../../src/lib/payfast';
+// Creates a WooCommerce order using "Direct bank transfer" (BACS) — no
+// payment gateway credentials needed. The order is left unpaid
+// ("on-hold" is WooCommerce's default status for BACS) until the store
+// owner manually confirms the transfer and marks it as paid/processing
+// in wp-admin.
+import { createOrder, getBacsGateway, type WooCommerceEnv } from '../../src/lib/woocommerce';
 import { sanitizeText, checkRateLimit, clientIp } from '../../src/lib/security';
 
 interface Env extends WooCommerceEnv {
-  PAYFAST_MERCHANT_ID: string;
-  PAYFAST_MERCHANT_KEY: string;
-  PAYFAST_PASSPHRASE: string;
-  PAYFAST_MODE: 'sandbox' | 'live';
-  PUBLIC_SITE_URL: string;
   RATE_LIMIT_KV: KVNamespace;
 }
 
@@ -62,42 +59,29 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     return new Response(JSON.stringify({ error: 'Missing required billing fields' }), { status: 400 });
   }
 
-  const order = await createOrder(env, {
-    payment_method: 'payfast',
-    payment_method_title: 'PayFast',
-    set_paid: false,
-    billing,
-    line_items: payload.items.map((item) => ({
-      product_id: item.productId,
-      quantity: item.quantity,
-    })),
-  });
+  const [order, bacs] = await Promise.all([
+    createOrder(env, {
+      payment_method: 'bacs',
+      payment_method_title: 'Direct Bank Transfer',
+      set_paid: false,
+      billing,
+      line_items: payload.items.map((item) => ({
+        product_id: item.productId,
+        quantity: item.quantity,
+      })),
+    }),
+    getBacsGateway(env).catch(() => null),
+  ]);
 
   const total = payload.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
-
-  const payfastConfig: PayfastConfig = {
-    merchantId: env.PAYFAST_MERCHANT_ID,
-    merchantKey: env.PAYFAST_MERCHANT_KEY,
-    passphrase: env.PAYFAST_PASSPHRASE,
-    mode: env.PAYFAST_MODE,
-  };
-
-  const fields = buildPayfastPaymentFields(payfastConfig, {
-    orderId: String((order as { id: number }).id),
-    amount: total,
-    itemName: `Order #${(order as { id: number }).id}`,
-    buyerEmail: billing.email,
-    buyerFirstName: billing.first_name,
-    returnUrl: `${env.PUBLIC_SITE_URL}/checkout/success`,
-    cancelUrl: `${env.PUBLIC_SITE_URL}/checkout/cancelled`,
-    notifyUrl: `${env.PUBLIC_SITE_URL}/api/payfast-webhook`,
-  });
+  const orderId = (order as { id: number }).id;
 
   return new Response(
     JSON.stringify({
-      orderId: (order as { id: number }).id,
-      payfastHost: env.PAYFAST_MODE === 'live' ? 'https://www.payfast.co.za/eng/process' : 'https://sandbox.payfast.co.za/eng/process',
-      fields,
+      orderId,
+      total,
+      instructions: bacs?.settings.instructions?.value ?? '',
+      accountDetails: bacs?.settings.account_details?.value ?? [],
     }),
     { status: 201, headers: { 'Content-Type': 'application/json' } }
   );

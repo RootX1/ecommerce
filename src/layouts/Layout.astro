@@ -9,7 +9,7 @@ interface Props {
 }
 
 const { title, description = 'TikTok-style video shopping, made in Cape Town.' } = Astro.props;
-const recaptchaSiteKey = import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY;
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 ---
 
 <!doctype html>
@@ -20,8 +20,7 @@ const recaptchaSiteKey = import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY;
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="theme-color" content="#000000" />
-    {recaptchaSiteKey && <meta name="recaptcha-site-key" content={recaptchaSiteKey} />}
-    {recaptchaSiteKey && <script is:inline defer src={`https://www.google.com/recaptcha/api.js?render=${recaptchaSiteKey}`}></script>}
+    {turnstileSiteKey && <script is:inline defer src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>}
   </head>
   <body>
     <div class="app-shell">
