@@ -5,20 +5,58 @@ import { withBase } from '../../lib/base';
 
 <Layout title="Order confirmed">
   <div class="confirmation-page">
-    <div class="check-icon">✓</div>
-    <h1>Order received</h1>
-    <p data-order-ref>Thank you! We've emailed your order confirmation.</p>
+    <p class="order-received">Thank you. Your order has been received.</p>
 
-    <div class="order-breakdown" data-order-breakdown hidden>
-      <div class="breakdown-row"><span>Items</span><span data-breakdown-items></span></div>
-      <div class="breakdown-row"><span data-breakdown-shipping-label>Delivery</span><span data-breakdown-shipping></span></div>
-      <div class="breakdown-row total"><span>Total</span><span data-breakdown-total></span></div>
-    </div>
+    <ul class="order-overview" data-order-overview hidden>
+      <li>
+        <span class="label">Order number:</span>
+        <span data-overview-id></span>
+      </li>
+      <li>
+        <span class="label">Email:</span>
+        <span data-overview-email></span>
+      </li>
+      <li>
+        <span class="label">Total:</span>
+        <span data-overview-total></span>
+      </li>
+      <li>
+        <span class="label">Payment method:</span>
+        <span data-overview-payment></span>
+      </li>
+    </ul>
+
+    <h2>Order details</h2>
+    <table class="order-table" data-order-table>
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody data-order-items></tbody>
+      <tfoot>
+        <tr>
+          <th scope="row">Subtotal:</th>
+          <td data-order-subtotal></td>
+        </tr>
+        <tr>
+          <th scope="row" data-shipping-label>Delivery:</th>
+          <td data-order-shipping></td>
+        </tr>
+        <tr class="order-total-row">
+          <th scope="row">Total:</th>
+          <td data-order-total></td>
+        </tr>
+      </tfoot>
+    </table>
 
     <div class="bank-details" data-bank-details hidden>
-      <h2>Bank transfer details</h2>
+      <h2>Payment</h2>
       <p class="instructions" data-instructions></p>
-      <dl data-account-fields></dl>
+      <table class="order-table">
+        <tbody data-account-fields></tbody>
+      </table>
       <p class="reference-note">Please use your order number as the payment reference so we can match your transfer.</p>
     </div>
 
@@ -29,106 +67,92 @@ import { withBase } from '../../lib/base';
 <style>
   .confirmation-page {
     min-height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 24px calc(16px + var(--nav-height)) 24px 24px;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 24px 16px calc(24px + var(--nav-height));
     overflow-y: auto;
   }
-  .check-icon {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: #12b76a;
-    color: #fff;
-    font-size: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 16px;
-    flex-shrink: 0;
-  }
-  h1 {
-    font-size: 20px;
-    margin: 0 0 8px;
-  }
-  p {
-    color: var(--muted);
-    font-size: 14px;
-    max-width: 340px;
-  }
-  .order-breakdown {
-    background: #111;
-    border-radius: 12px;
+  .order-received {
+    background: #f0f9f4;
+    border: 1px solid #b6e5c8;
+    color: #1a7a45;
     padding: 12px 16px;
-    margin-top: 16px;
-    width: 100%;
-    max-width: 340px;
-    text-align: left;
-    font-size: 13px;
+    border-radius: 6px;
+    font-size: 14px;
+    margin: 0 0 20px;
   }
-  .breakdown-row {
+  h2 {
+    font-size: 16px;
+    margin: 24px 0 10px;
+    font-weight: 700;
+  }
+  .order-overview {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .order-overview li {
     display: flex;
     justify-content: space-between;
-    padding: 3px 0;
+    padding: 10px 14px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+  .order-overview li:last-child {
+    border-bottom: none;
+  }
+  .order-overview .label {
     color: var(--muted);
   }
-  .breakdown-row.total {
-    color: #fff;
-    font-weight: 700;
-    font-size: 15px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    margin-top: 6px;
-    padding-top: 8px;
-  }
-  .bank-details {
-    background: #111;
-    border-radius: 12px;
-    padding: 16px;
-    margin-top: 16px;
+  .order-table {
     width: 100%;
-    max-width: 340px;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .order-table th,
+  .order-table td {
+    border: 1px solid var(--border);
+    padding: 10px 12px;
     text-align: left;
   }
-  .bank-details h2 {
-    font-size: 15px;
-    margin: 0 0 8px;
-    color: #fff;
+  .order-table thead th {
+    background: var(--card-bg);
+    font-weight: 700;
   }
-  .instructions {
+  .order-table tfoot th {
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .order-table td {
+    text-align: right;
+  }
+  .order-total-row th,
+  .order-total-row td {
+    font-weight: 700;
+    color: var(--fg);
+  }
+  .bank-details .instructions {
     font-size: 13px;
     color: var(--muted);
     margin: 0 0 12px;
   }
-  .bank-details dl {
-    margin: 0;
-    font-size: 13px;
-  }
-  .bank-details dt {
-    color: var(--muted);
-    margin-top: 8px;
-  }
-  .bank-details dd {
-    margin: 0;
-    color: #fff;
-    font-weight: 600;
-  }
   .reference-note {
     font-size: 12px;
-    margin: 12px 0 0;
+    margin: 10px 0 0;
     color: var(--muted);
   }
   .continue-btn {
-    margin-top: 20px;
+    display: inline-block;
+    margin-top: 24px;
     background: var(--primary);
     color: var(--primary-text);
     text-decoration: none;
     padding: 12px 24px;
     border-radius: 8px;
     font-weight: 600;
-    flex-shrink: 0;
   }
 </style>
 
@@ -137,12 +161,16 @@ import { withBase } from '../../lib/base';
 
   const ORDER_STORAGE_KEY = 'tiktok-shop-last-order';
 
-  const orderRefEl = document.querySelector<HTMLElement>('[data-order-ref]')!;
-  const breakdownEl = document.querySelector<HTMLElement>('[data-order-breakdown]')!;
-  const breakdownItemsEl = document.querySelector<HTMLElement>('[data-breakdown-items]')!;
-  const breakdownShippingLabelEl = document.querySelector<HTMLElement>('[data-breakdown-shipping-label]')!;
-  const breakdownShippingEl = document.querySelector<HTMLElement>('[data-breakdown-shipping]')!;
-  const breakdownTotalEl = document.querySelector<HTMLElement>('[data-breakdown-total]')!;
+  const overviewEl = document.querySelector<HTMLElement>('[data-order-overview]')!;
+  const overviewId = document.querySelector<HTMLElement>('[data-overview-id]')!;
+  const overviewEmail = document.querySelector<HTMLElement>('[data-overview-email]')!;
+  const overviewTotal = document.querySelector<HTMLElement>('[data-overview-total]')!;
+  const overviewPayment = document.querySelector<HTMLElement>('[data-overview-payment]')!;
+  const itemsBody = document.querySelector<HTMLElement>('[data-order-items]')!;
+  const subtotalEl = document.querySelector<HTMLElement>('[data-order-subtotal]')!;
+  const shippingLabelEl = document.querySelector<HTMLElement>('[data-shipping-label]')!;
+  const shippingEl = document.querySelector<HTMLElement>('[data-order-shipping]')!;
+  const totalEl = document.querySelector<HTMLElement>('[data-order-total]')!;
   const bankDetailsEl = document.querySelector<HTMLElement>('[data-bank-details]')!;
   const instructionsEl = document.querySelector<HTMLElement>('[data-instructions]')!;
   const fieldsEl = document.querySelector<HTMLElement>('[data-account-fields]')!;
@@ -164,13 +192,28 @@ import { withBase } from '../../lib/base';
   if (raw) {
     try {
       const order: CheckoutResult = JSON.parse(raw);
-      orderRefEl.textContent = `Order #${order.orderId} received — we've emailed your confirmation.`;
 
-      breakdownEl.hidden = false;
-      breakdownItemsEl.textContent = formatZar(order.itemsTotal);
-      breakdownShippingLabelEl.textContent = order.shippingTitle || 'Delivery';
-      breakdownShippingEl.textContent = order.shippingCost > 0 ? formatZar(order.shippingCost) : 'Free';
-      breakdownTotalEl.textContent = formatZar(order.total);
+      overviewEl.hidden = false;
+      overviewId.textContent = String(order.orderId);
+      overviewEmail.textContent = order.billingEmail;
+      overviewTotal.textContent = formatZar(order.total);
+      overviewPayment.textContent = order.paymentMethodTitle;
+
+      itemsBody.innerHTML = order.items
+        .map(
+          (item) => `
+        <tr>
+          <td>${item.name} × ${item.quantity}</td>
+          <td>${formatZar(item.unitPrice * item.quantity)}</td>
+        </tr>
+      `
+        )
+        .join('');
+
+      subtotalEl.textContent = formatZar(order.itemsTotal);
+      shippingLabelEl.textContent = `${order.shippingTitle || 'Delivery'}:`;
+      shippingEl.textContent = order.shippingCost > 0 ? formatZar(order.shippingCost) : 'Free';
+      totalEl.textContent = formatZar(order.total);
 
       if (order.accountDetails?.length) {
         bankDetailsEl.hidden = false;
@@ -178,11 +221,15 @@ import { withBase } from '../../lib/base';
         for (const account of order.accountDetails) {
           for (const [key, value] of Object.entries(account)) {
             if (!value) continue;
-            const dt = document.createElement('dt');
-            dt.textContent = FIELD_LABELS[key] ?? key;
-            const dd = document.createElement('dd');
-            dd.textContent = String(value);
-            fieldsEl.append(dt, dd);
+            const row = document.createElement('tr');
+            const th = document.createElement('th');
+            th.scope = 'row';
+            th.textContent = FIELD_LABELS[key] ?? key;
+            const td = document.createElement('td');
+            td.textContent = String(value);
+            td.style.textAlign = 'left';
+            row.append(th, td);
+            fieldsEl.appendChild(row);
           }
         }
       }

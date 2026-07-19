@@ -24,6 +24,7 @@ export interface Product {
   videoUrl: string;
   posterUrl: string;
   category: string;
+  shortDescription?: string;
   reviews: Review[];
   /** True when this product is in the "Personalised" WooCommerce category — shows the design-upload field. */
   requiresUpload?: boolean;
@@ -43,6 +44,7 @@ export const mockProducts: Product[] = [
     videoUrl: '/videos/sample-1.mp4',
     posterUrl: '/videos/sample-1-poster.jpg',
     category: 'Canvas Prints',
+    shortDescription: 'Museum-quality canvas print from your own photo, stretched on a solid wood frame.',
     reviews: [
       {
         id: 'r1',

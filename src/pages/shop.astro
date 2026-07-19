@@ -82,10 +82,11 @@ try {
     gap: 10px;
   }
   .category-card {
-    background: #1a1a1a;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
     border-radius: 10px;
     padding: 16px;
-    color: #fff;
+    color: var(--fg);
     text-decoration: none;
     font-weight: 600;
   }
@@ -96,9 +97,10 @@ try {
     margin-top: 12px;
   }
   .product-card {
-    color: #fff;
+    color: var(--fg);
     text-decoration: none;
-    background: #111;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
     border-radius: 10px;
     overflow: hidden;
   }
@@ -119,6 +121,6 @@ try {
     font-size: 13px;
     font-weight: 700;
     margin: 0;
-    color: var(--secondary);
+    color: var(--secondary-text);
   }
 </style>

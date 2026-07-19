@@ -16,6 +16,16 @@ function metaValue(product: WooProduct, key: string): string {
   return typeof entry?.value === 'string' ? entry.value : '';
 }
 
+/** Strips HTML and truncates WooCommerce's short_description for the feed overlay. */
+function plainShortDescription(html: string, maxLength = 140): string {
+  const text = html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength - 1).trimEnd()}…`;
+}
+
 export function mapWooProduct(product: WooProduct): Product {
   const regularPrice = Number(product.regular_price || product.price || 0);
   const price = Number(product.price || regularPrice);
@@ -34,6 +44,7 @@ export function mapWooProduct(product: WooProduct): Product {
     videoUrl: metaValue(product, 'video_url'),
     posterUrl: metaValue(product, 'video_poster_url') || product.images?.[0]?.src || '',
     category: product.categories?.[0]?.name ?? 'Shop',
+    shortDescription: product.short_description ? plainShortDescription(product.short_description) : '',
     reviews: [] as Review[],
     requiresUpload: product.categories?.some((c) => isPersonalisedCategory(c.name, c.slug)) ?? false,
   };

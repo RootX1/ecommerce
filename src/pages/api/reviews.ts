@@ -3,6 +3,7 @@
 import type { APIRoute } from 'astro';
 import { listProductReviews, createProductReview } from '../../lib/woocommerce';
 import { sanitizeText, containsLinkOrScript, honeypotTripped, verifyTurnstile, checkRateLimit, clientIp } from '../../lib/security';
+import { isEmailVerified } from '../../lib/emailVerification';
 
 export const prerender = false;
 
@@ -73,7 +74,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
   }
 
-  // 5. First-time reviewers go to the moderation queue regardless of score.
+  // 5. Reviews are only accepted from an email address the reviewer has
+  // verified via /api/verify-email (one-time code) — checked server-side
+  // regardless of what the client claims, so this can't be bypassed.
+  const verified = await isEmailVerified(env.RATE_LIMIT_KV, payload.email);
+  if (!verified) {
+    return new Response(JSON.stringify({ error: 'Please verify your email address before submitting a review.' }), {
+      status: 403,
+    });
+  }
+
+  // 6. First-time reviewers go to the moderation queue regardless of score.
   const status = payload.isFirstTimeReviewer ? 'hold' : 'approved';
 
   const review = await createProductReview(env, {

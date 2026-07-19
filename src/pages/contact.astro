@@ -59,11 +59,11 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   }
   .contact-form input,
   .contact-form textarea {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
     border-radius: 8px;
     padding: 12px;
-    color: #fff;
+    color: var(--fg);
     font-size: 14px;
     resize: none;
   }
@@ -95,7 +95,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     color: var(--muted);
   }
   .business-info a {
-    color: #fff;
+    color: var(--fg);
     text-decoration: underline;
   }
   .whatsapp-btn {

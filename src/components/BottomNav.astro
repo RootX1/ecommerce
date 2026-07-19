@@ -31,8 +31,8 @@ const items = [
     align-items: center;
     height: var(--nav-height);
     padding-bottom: var(--safe-bottom);
-    background: rgba(0, 0, 0, 0.92);
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--primary);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
     position: relative;
     z-index: 20;
   }
@@ -45,12 +45,12 @@ const items = [
     justify-content: center;
     gap: 2px;
     text-decoration: none;
-    color: var(--muted);
+    color: rgba(255, 255, 255, 0.7);
     font-size: 11px;
   }
 
   .nav-item.active {
-    color: var(--fg);
+    color: var(--secondary);
   }
 
   .icon {

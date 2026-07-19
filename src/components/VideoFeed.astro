@@ -43,7 +43,7 @@ const feedData = products.map((p) => ({
 </style>
 
 <script>
-  import { submitReview } from '../lib/api';
+  import { submitReview, requestEmailCode, confirmEmailCode } from '../lib/api';
   import { withBase } from '../lib/base';
 
   interface FeedProduct {
@@ -184,6 +184,79 @@ const feedData = products.map((p) => ({
   const stars = Array.from(document.querySelectorAll<HTMLElement>('.star'));
   let activeProductId: string | null = null;
 
+  // --- Email verification gate (reviews require a verified email) --------
+  const emailInput = document.querySelector<HTMLInputElement>('[data-review-email]');
+  const sendCodeBtn = document.querySelector<HTMLButtonElement>('[data-send-code]');
+  const codeRow = document.querySelector<HTMLElement>('[data-code-row]');
+  const codeInput = document.querySelector<HTMLInputElement>('[data-code-input]');
+  const confirmCodeBtn = document.querySelector<HTMLButtonElement>('[data-confirm-code]');
+  const verifyStatus = document.querySelector<HTMLElement>('[data-verify-status]');
+  const verifyHint = document.querySelector<HTMLElement>('[data-verify-hint]');
+  const reviewTextarea = document.querySelector<HTMLTextAreaElement>('[data-review-text]');
+  const submitBtn = document.querySelector<HTMLButtonElement>('[data-submit-btn]');
+  let verifiedEmail: string | null = null;
+
+  function setVerifyStatus(message: string, kind: 'success' | 'error' | '') {
+    if (!verifyStatus) return;
+    verifyStatus.hidden = false;
+    verifyStatus.textContent = message;
+    verifyStatus.className = `verify-status${kind ? ` ${kind}` : ''}`;
+  }
+
+  function setReviewFormLocked(unlocked: boolean) {
+    stars.forEach((s) => (s as HTMLButtonElement).disabled = !unlocked);
+    if (reviewTextarea) reviewTextarea.disabled = !unlocked;
+    if (submitBtn) submitBtn.disabled = !unlocked;
+    if (verifyHint) verifyHint.hidden = unlocked;
+  }
+
+  emailInput?.addEventListener('input', () => {
+    if (verifiedEmail && emailInput.value.trim().toLowerCase() !== verifiedEmail) {
+      verifiedEmail = null;
+      setReviewFormLocked(false);
+      if (verifyStatus) verifyStatus.hidden = true;
+      if (codeRow) codeRow.hidden = true;
+    }
+  });
+
+  sendCodeBtn?.addEventListener('click', async () => {
+    const email = emailInput?.value.trim() ?? '';
+    if (!email || !email.includes('@')) {
+      setVerifyStatus('Please enter a valid email address first.', 'error');
+      return;
+    }
+    sendCodeBtn.disabled = true;
+    try {
+      await requestEmailCode(email);
+      if (codeRow) codeRow.hidden = false;
+      setVerifyStatus('Code sent — check your inbox.', 'success');
+    } catch (err) {
+      setVerifyStatus(err instanceof Error ? err.message : 'Unable to send code.', 'error');
+    } finally {
+      sendCodeBtn.disabled = false;
+    }
+  });
+
+  confirmCodeBtn?.addEventListener('click', async () => {
+    const email = emailInput?.value.trim() ?? '';
+    const code = codeInput?.value.trim() ?? '';
+    if (!code) {
+      setVerifyStatus('Enter the 6-digit code from your email.', 'error');
+      return;
+    }
+    confirmCodeBtn.disabled = true;
+    try {
+      await confirmEmailCode(email, code);
+      verifiedEmail = email.toLowerCase();
+      setReviewFormLocked(true);
+      setVerifyStatus('✓ Email verified — you can now write your review.', 'success');
+    } catch (err) {
+      setVerifyStatus(err instanceof Error ? err.message : 'Incorrect or expired code.', 'error');
+    } finally {
+      confirmCodeBtn.disabled = false;
+    }
+  });
+
   function renderStars(container: HTMLElement, rating: number) {
     container.textContent = '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating));
   }
@@ -239,6 +312,10 @@ const feedData = products.map((p) => ({
     stars.forEach((s) => s.classList.remove('selected'));
     if (ratingInput) ratingInput.value = '0';
     if (reviewError) reviewError.hidden = true;
+    verifiedEmail = null;
+    setReviewFormLocked(false);
+    if (verifyStatus) verifyStatus.hidden = true;
+    if (codeRow) codeRow.hidden = true;
     resetTurnstile();
   }
 
@@ -262,6 +339,11 @@ const feedData = products.map((p) => ({
   reviewForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!activeProductId || !reviewError) return;
+    if (!verifiedEmail) {
+      reviewError.hidden = false;
+      reviewError.textContent = 'Please verify your email before submitting a review.';
+      return;
+    }
     const formData = new FormData(reviewForm);
     const rating = Number(formData.get('rating'));
     if (!rating) {
@@ -270,7 +352,6 @@ const feedData = products.map((p) => ({
       return;
     }
 
-    const submitBtn = reviewForm.querySelector<HTMLButtonElement>('.submit-btn');
     if (submitBtn) submitBtn.disabled = true;
     reviewError.hidden = true;
 

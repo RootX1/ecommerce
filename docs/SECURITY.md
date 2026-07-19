@@ -60,14 +60,29 @@ put`, never `wrangler.jsonc`) — none of these ever reach the browser.
 - Rotate the WooCommerce Consumer Key/Secret and Turnstile secret
   immediately if they are ever exposed in a log, screenshot, or commit.
 
-## Reviews: verified purchase + moderation
+## Reviews: verified email + moderation
 
-- `src/pages/api/reviews.ts` marks first-time reviewers' submissions as
-  `hold` so they sit in the WooCommerce moderation queue before appearing.
-- Verified-purchase badges are driven by WooCommerce's own order history —
-  cross-reference the reviewer's email against completed orders for that
-  product (WooCommerce Product Reviews Pro or a small custom REST filter
-  can automate this; document the exact plugin choice once picked).
+- Before a review can be submitted, the reviewer must prove they own the
+  email address they entered: `POST /api/verify-email/request` emails a
+  6-digit one-time code (`src/lib/emailVerification.ts`), and
+  `POST /api/verify-email/confirm` checks it and marks that address
+  "verified" in the `RATE_LIMIT_KV` namespace for 90 days. This is a
+  lightweight gate, not a full customer-account system — there's no
+  password, and verification is per-email rather than per-person.
+- `src/pages/api/reviews.ts` independently re-checks `isEmailVerified()`
+  server-side before accepting a review, so the client-side UI gating in
+  `ReviewModal.astro`/`VideoFeed.astro` can't be bypassed by calling the API
+  directly.
+- First-time reviewers' submissions are still marked `hold` so they sit in
+  the WooCommerce moderation queue before appearing.
+- The same verified-email gate protects `/api/orders` (used by the account
+  page's Orders tab) — a visitor can only look up orders for an email they
+  just proved they control, not an arbitrary stranger's address.
+- Verified-purchase badges shown on existing reviews are driven by
+  WooCommerce's own order history — cross-reference the reviewer's email
+  against completed orders for that product (WooCommerce Product Reviews
+  Pro or a small custom REST filter can automate this; document the exact
+  plugin choice once picked).
 
 ## Spam protection stack
 

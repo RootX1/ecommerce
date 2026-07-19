@@ -40,6 +40,7 @@ const regularFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', cur
       )}
     </div>
     <div class="rating">★ {product.rating.toFixed(1)} · {product.reviewCount} reviews</div>
+    {product.shortDescription && <p class="short-desc">{product.shortDescription}</p>}
   </div>
 
   <OverlayButtons product={product} />
@@ -71,7 +72,7 @@ const regularFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', cur
   .scrim {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0) 35%);
+    background: linear-gradient(to top, rgba(0, 64, 109, 0.88) 0%, rgba(0, 64, 109, 0.15) 45%, rgba(0, 64, 109, 0) 70%);
     pointer-events: none;
   }
 
@@ -85,21 +86,23 @@ const regularFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', cur
   }
 
   .title {
-    font-size: 17px;
+    font-size: 22px;
     margin: 0 0 6px;
-    font-weight: 600;
+    font-weight: 700;
+    line-height: 1.2;
   }
 
   .price-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 15px;
+    font-size: 20px;
     margin-bottom: 4px;
   }
 
   .price {
-    font-weight: 700;
+    font-weight: 800;
+    font-size: 22px;
     color: var(--secondary);
   }
 
@@ -121,6 +124,13 @@ const regularFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', cur
   .rating {
     font-size: 13px;
     opacity: 0.9;
+  }
+
+  .short-desc {
+    font-size: 13px;
+    opacity: 0.9;
+    margin: 6px 0 0;
+    max-width: 90%;
   }
 
   .mute-toggle {

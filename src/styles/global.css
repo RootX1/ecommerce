@@ -1,6 +1,9 @@
 :root {
-  --bg: #000;
-  --fg: #fff;
+  /* White, simple background for every static page. The immersive video
+     feed itself stays black behind the video (set inline on .video-card)
+     since that's necessarily full-bleed video, not page background. */
+  --bg: #fff;
+  --fg: #16181c;
 
   /* Brand palette. Primary is dark enough for white text on top of it;
      secondary is a bright accent for icons/badges/highlights only —
@@ -11,8 +14,12 @@
   --secondary: #ebdc3a;
   --secondary-text: #00406d;
 
-  --muted: rgba(255, 255, 255, 0.7);
-  --sheet-bg: #161823;
+  --muted: rgba(22, 24, 28, 0.6);
+  --card-bg: #f5f6f8;
+  --border: rgba(22, 24, 28, 0.12);
+  --input-bg: #f5f6f8;
+  --input-border: rgba(22, 24, 28, 0.18);
+  --sheet-bg: #fff;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --nav-height: 56px;
 }

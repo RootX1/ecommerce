@@ -95,6 +95,23 @@ controls — so the repo is built to match it:
       deploys regardless of what's in `wrangler.jsonc`.
 - [ ] Confirm the domain's DNS is proxied through Cloudflare (orange cloud)
       — `routes` bindings only apply to proxied traffic.
+- [ ] **Add the MailChannels domain lockdown DNS record** — without this,
+      every email sent by the Worker (contact form, order confirmations,
+      verification codes) silently fails. In the Cloudflare DNS dashboard for
+      `ecommercegoods.co.za`, add a TXT record:
+      - Name: `_mailchannels`
+      - Content: `v=mc1 cfid=<your-worker-subdomain>.workers.dev`
+        (find `<your-worker-subdomain>` under Workers & Pages → your worker
+        → Settings → Domains & Routes; it's the `*.workers.dev` name even
+        though the Worker itself is only reachable via the custom domain
+        route). See MailChannels' "Domain Lockdown" docs for the exact
+        current format if this changes.
+      - A basic SPF record (`v=spf1 include:relay.mailchannels.net ~all`) is
+        also recommended so recipient mail servers don't flag the messages
+        as spoofed.
+      Verify it resolved with `dig TXT _mailchannels.ecommercegoods.co.za`
+      before assuming it's live — DNS changes can take a few minutes to
+      propagate.
 - [ ] Push to the connected branch (or trigger a deploy) and check the build
       log completes without the `_worker.js`/asset errors this project hit
       earlier — `npm run build` includes a postbuild step

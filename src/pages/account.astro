@@ -1,6 +1,5 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { withBase } from '../lib/base';
 ---
 
 <Layout title="My Account">
@@ -10,13 +9,21 @@ import { withBase } from '../lib/base';
     <div class="account-tabs">
       <button class="tab active" data-tab="orders">Orders</button>
       <button class="tab" data-tab="wishlist">Wishlist</button>
-      <button class="tab" data-tab="reviews">My Reviews</button>
       <button class="tab" data-tab="settings">Settings</button>
     </div>
 
     <div class="tab-panel" data-panel="orders">
-      <p class="hint">Order history is fetched from WooCommerce once you're signed in.</p>
-      <a class="signin-btn" href={withBase('/login')}>Sign in to view orders</a>
+      <div class="verify-panel" data-orders-verify>
+        <p class="hint">Enter the email you ordered with to view your order history.</p>
+        <input type="email" placeholder="Your email" data-orders-email />
+        <button class="primary-btn" data-orders-send-code>Send verification code</button>
+        <div class="code-row" data-orders-code-row hidden>
+          <input type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" data-orders-code-input />
+          <button class="primary-btn" data-orders-confirm-code>Verify</button>
+        </div>
+        <p class="verify-status" data-orders-status hidden></p>
+      </div>
+      <div class="orders-list" data-orders-list hidden></div>
     </div>
 
     <div class="tab-panel" data-panel="wishlist" hidden>
@@ -24,12 +31,15 @@ import { withBase } from '../lib/base';
       <p class="hint" data-wishlist-empty hidden>Your wishlist is empty — heart a product in the feed to save it here.</p>
     </div>
 
-    <div class="tab-panel" data-panel="reviews" hidden>
-      <p class="hint">Reviews you've submitted will appear here once signed in.</p>
-    </div>
-
     <div class="tab-panel" data-panel="settings" hidden>
-      <p class="hint">Account settings (name, email, address, password) sync with your WooCommerce customer profile.</p>
+      <div class="settings-card">
+        <p class="hint" data-settings-hint>Verify your email on the Orders tab to see your account details here.</p>
+        <dl class="settings-fields" data-settings-fields hidden>
+          <dt>Email</dt>
+          <dd data-settings-email></dd>
+        </dl>
+      </div>
+      <p class="hint">Name, delivery address, and password are managed in your order confirmations and via WhatsApp/email support for now.</p>
     </div>
   </div>
 </Layout>
@@ -50,8 +60,8 @@ import { withBase } from '../lib/base';
     margin: 12px 0;
   }
   .tab {
-    background: rgba(255, 255, 255, 0.08);
-    border: none;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
     color: var(--muted);
     padding: 8px 14px;
     border-radius: 20px;
@@ -61,30 +71,158 @@ import { withBase } from '../lib/base';
   }
   .tab.active {
     background: var(--primary);
+    border-color: var(--primary);
     color: var(--primary-text);
   }
   .hint {
     color: var(--muted);
     font-size: 13px;
   }
-  .signin-btn {
-    display: inline-block;
-    margin-top: 8px;
+  .verify-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 340px;
+  }
+  .verify-panel input {
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    padding: 12px;
+    color: var(--fg);
+    font-size: 14px;
+  }
+  .code-row {
+    display: flex;
+    gap: 8px;
+  }
+  .code-row input {
+    flex: 1;
+  }
+  .primary-btn {
     background: var(--primary);
     color: var(--primary-text);
-    text-decoration: none;
-    padding: 10px 16px;
+    border: none;
     border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .primary-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .verify-status {
+    font-size: 13px;
+    margin: 0;
+  }
+  .verify-status.success {
+    color: #12b76a;
+  }
+  .verify-status.error {
+    color: #d92d20;
+  }
+  .orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .order-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .order-card-header {
+    display: flex;
+    justify-content: space-between;
     font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .order-status {
+    text-transform: capitalize;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .order-items {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 4px 0 0;
   }
   .wishlist-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
+  .wishlist-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--fg);
+    position: relative;
+  }
+  .wishlist-card img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    display: block;
+  }
+  .wishlist-card-info {
+    padding: 8px;
+  }
+  .wishlist-card-title {
+    font-size: 13px;
+    margin: 0 0 4px;
+  }
+  .wishlist-card-price {
+    font-size: 13px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--secondary-text);
+  }
+  .wishlist-remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 13px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .settings-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .settings-fields {
+    margin: 8px 0 0;
+    font-size: 13px;
+  }
+  .settings-fields dt {
+    color: var(--muted);
+  }
+  .settings-fields dd {
+    margin: 0 0 8px;
+    font-weight: 600;
+  }
 </style>
 
 <script>
+  import { fetchProductsByIds, requestEmailCode, confirmEmailCode, fetchOrdersByEmail, type OrderSummary } from '../lib/api';
+  import { withBase } from '../lib/base';
+
   const tabs = document.querySelectorAll<HTMLElement>('.tab');
   const panels = document.querySelectorAll<HTMLElement>('.tab-panel');
 
@@ -96,18 +234,186 @@ import { withBase } from '../lib/base';
     });
   });
 
+  function formatZar(amount: number): string {
+    return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(amount);
+  }
+
+  // --- Wishlist -------------------------------------------------------
   const WISHLIST_KEY = 'tiktok-shop-wishlist';
   const wishlistList = document.querySelector<HTMLElement>('[data-wishlist-list]');
   const wishlistEmpty = document.querySelector<HTMLElement>('[data-wishlist-empty]');
-  try {
-    const ids: string[] = JSON.parse(localStorage.getItem(WISHLIST_KEY) ?? '[]');
-    if (ids.length === 0 && wishlistEmpty) wishlistEmpty.hidden = false;
-    // Product lookup by id would come from /api/products in production;
-    // this placeholder just shows the saved ids until that's wired up.
-    if (wishlistList) {
-      wishlistList.innerHTML = ids.map((id) => `<div class="hint">Product #${id}</div>`).join('');
+
+  function getWishlist(): string[] {
+    try {
+      return JSON.parse(localStorage.getItem(WISHLIST_KEY) ?? '[]');
+    } catch {
+      return [];
     }
-  } catch {
-    // ignore malformed localStorage state
   }
+
+  function setWishlist(ids: string[]) {
+    localStorage.setItem(WISHLIST_KEY, JSON.stringify(ids));
+  }
+
+  interface WooProductLite {
+    id: number;
+    slug: string;
+    name: string;
+    price: string;
+    images: { src: string }[];
+  }
+
+  async function renderWishlist() {
+    const ids = getWishlist();
+    if (!wishlistList) return;
+    if (ids.length === 0) {
+      wishlistList.innerHTML = '';
+      if (wishlistEmpty) wishlistEmpty.hidden = false;
+      return;
+    }
+    if (wishlistEmpty) wishlistEmpty.hidden = true;
+    wishlistList.innerHTML = '<p class="hint">Loading your wishlist…</p>';
+
+    try {
+      const products: WooProductLite[] = await fetchProductsByIds(ids);
+      // Preserve wishlist order, drop any product that no longer exists.
+      const byId = new Map(products.map((p) => [String(p.id), p]));
+      const ordered = ids.map((id) => byId.get(id)).filter((p): p is WooProductLite => !!p);
+
+      if (ordered.length === 0) {
+        wishlistList.innerHTML = '';
+        if (wishlistEmpty) wishlistEmpty.hidden = false;
+        return;
+      }
+
+      wishlistList.innerHTML = '';
+      for (const product of ordered) {
+        const card = document.createElement('a');
+        card.className = 'wishlist-card';
+        card.href = withBase(`/product/${product.slug}`);
+        card.innerHTML = `
+          <img src="${product.images?.[0]?.src ?? ''}" alt="${product.name}" loading="lazy" />
+          <div class="wishlist-card-info">
+            <p class="wishlist-card-title">${product.name}</p>
+            <p class="wishlist-card-price">${formatZar(Number(product.price || 0))}</p>
+          </div>
+          <button class="wishlist-remove" type="button" data-remove-id="${product.id}" aria-label="Remove from wishlist">✕</button>
+        `;
+        card.querySelector('[data-remove-id]')?.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setWishlist(getWishlist().filter((id) => id !== String(product.id)));
+          renderWishlist();
+        });
+        wishlistList.appendChild(card);
+      }
+    } catch {
+      wishlistList.innerHTML = '<p class="hint">Unable to load your wishlist right now.</p>';
+    }
+  }
+
+  renderWishlist();
+
+  // --- Orders (email-verified lookup) ---------------------------------
+  const VERIFIED_EMAIL_KEY = 'tiktok-shop-verified-email';
+  const ordersEmailInput = document.querySelector<HTMLInputElement>('[data-orders-email]');
+  const ordersSendCodeBtn = document.querySelector<HTMLButtonElement>('[data-orders-send-code]');
+  const ordersCodeRow = document.querySelector<HTMLElement>('[data-orders-code-row]');
+  const ordersCodeInput = document.querySelector<HTMLInputElement>('[data-orders-code-input]');
+  const ordersConfirmCodeBtn = document.querySelector<HTMLButtonElement>('[data-orders-confirm-code]');
+  const ordersStatus = document.querySelector<HTMLElement>('[data-orders-status]');
+  const ordersVerifyPanel = document.querySelector<HTMLElement>('[data-orders-verify]');
+  const ordersListEl = document.querySelector<HTMLElement>('[data-orders-list]');
+  const settingsHint = document.querySelector<HTMLElement>('[data-settings-hint]');
+  const settingsFields = document.querySelector<HTMLElement>('[data-settings-fields]');
+  const settingsEmail = document.querySelector<HTMLElement>('[data-settings-email]');
+
+  function setOrdersStatus(message: string, kind: 'success' | 'error' | '') {
+    if (!ordersStatus) return;
+    ordersStatus.hidden = false;
+    ordersStatus.textContent = message;
+    ordersStatus.className = `verify-status${kind ? ` ${kind}` : ''}`;
+  }
+
+  function renderOrders(orders: OrderSummary[]) {
+    if (!ordersListEl) return;
+    ordersListEl.hidden = false;
+    if (ordersVerifyPanel) ordersVerifyPanel.hidden = true;
+    if (orders.length === 0) {
+      ordersListEl.innerHTML = '<p class="hint">No orders found for this email yet.</p>';
+      return;
+    }
+    ordersListEl.innerHTML = orders
+      .map(
+        (order) => `
+        <div class="order-card">
+          <div class="order-card-header">
+            <span>Order #${order.id}</span>
+            <span>${formatZar(Number(order.total))}</span>
+          </div>
+          <div class="order-status">${new Date(order.date_created).toLocaleDateString('en-ZA')} · ${order.status}</div>
+          <p class="order-items">${order.line_items.map((li) => `${li.quantity} × ${li.name}`).join(', ')}</p>
+        </div>
+      `
+      )
+      .join('');
+  }
+
+  async function loadOrdersFor(email: string) {
+    try {
+      const orders = await fetchOrdersByEmail(email);
+      renderOrders(orders);
+      if (settingsHint) settingsHint.hidden = true;
+      if (settingsFields) settingsFields.hidden = false;
+      if (settingsEmail) settingsEmail.textContent = email;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // If this browser already verified an email recently, skip straight to orders.
+  const savedEmail = localStorage.getItem(VERIFIED_EMAIL_KEY);
+  if (savedEmail) {
+    loadOrdersFor(savedEmail).then((ok) => {
+      if (!ok) localStorage.removeItem(VERIFIED_EMAIL_KEY);
+    });
+  }
+
+  ordersSendCodeBtn?.addEventListener('click', async () => {
+    const email = ordersEmailInput?.value.trim() ?? '';
+    if (!email || !email.includes('@')) {
+      setOrdersStatus('Please enter a valid email address.', 'error');
+      return;
+    }
+    ordersSendCodeBtn.disabled = true;
+    try {
+      await requestEmailCode(email);
+      if (ordersCodeRow) ordersCodeRow.hidden = false;
+      setOrdersStatus('Code sent — check your inbox.', 'success');
+    } catch (err) {
+      setOrdersStatus(err instanceof Error ? err.message : 'Unable to send code.', 'error');
+    } finally {
+      ordersSendCodeBtn.disabled = false;
+    }
+  });
+
+  ordersConfirmCodeBtn?.addEventListener('click', async () => {
+    const email = ordersEmailInput?.value.trim() ?? '';
+    const code = ordersCodeInput?.value.trim() ?? '';
+    if (!code) {
+      setOrdersStatus('Enter the 6-digit code from your email.', 'error');
+      return;
+    }
+    ordersConfirmCodeBtn.disabled = true;
+    try {
+      await confirmEmailCode(email, code);
+      localStorage.setItem(VERIFIED_EMAIL_KEY, email.toLowerCase());
+      await loadOrdersFor(email);
+    } catch (err) {
+      setOrdersStatus(err instanceof Error ? err.message : 'Incorrect or expired code.', 'error');
+    } finally {
+      ordersConfirmCodeBtn.disabled = false;
+    }
+  });
 </script>

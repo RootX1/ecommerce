@@ -22,13 +22,32 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     <form class="review-form" data-review-form>
       <div class="star-input" data-star-input role="radiogroup" aria-label="Rating">
         {[1, 2, 3, 4, 5].map((n) => (
-          <button type="button" class="star" data-star-value={n} aria-label={`${n} star`}>★</button>
+          <button type="button" class="star" data-star-value={n} aria-label={`${n} star`} disabled>★</button>
         ))}
         <input type="hidden" name="rating" data-rating-value value="0" />
       </div>
+      <p class="verify-hint" data-verify-hint>Verify your email above to write a review.</p>
       <input type="text" name="name" placeholder="Your name" required maxlength="100" />
-      <input type="email" name="email" placeholder="Your email" required maxlength="120" />
-      <textarea name="text" placeholder="Share your experience..." required maxlength="2000" rows="3"></textarea>
+      <input type="email" name="email" placeholder="Your email" required maxlength="120" data-review-email />
+
+      <div class="verify-block" data-verify-block>
+        <button type="button" class="verify-btn" data-send-code>Send verification code</button>
+        <div class="code-row" data-code-row hidden>
+          <input type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" data-code-input />
+          <button type="button" class="verify-btn" data-confirm-code>Verify</button>
+        </div>
+        <p class="verify-status" data-verify-status hidden></p>
+      </div>
+
+      <textarea
+        name="text"
+        placeholder="Share your experience..."
+        required
+        maxlength="2000"
+        rows="3"
+        disabled
+        data-review-text
+      ></textarea>
 
       <!-- Honeypot: hidden from real users via CSS, bots tend to fill every field -->
       <div class="hp-field" aria-hidden="true">
@@ -38,7 +57,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 
       {turnstileSiteKey && <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-appearance="interaction-only" />}
 
-      <button type="submit" class="submit-btn">Post review</button>
+      <button type="submit" class="submit-btn" disabled data-submit-btn>Post review</button>
       <p class="form-error" data-review-error hidden></p>
     </form>
   </div>
@@ -60,7 +79,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 
   .review-sheet {
     background: var(--sheet-bg);
-    color: #fff;
+    color: var(--fg);
     width: 100%;
     max-height: 80vh;
     border-radius: 16px 16px 0 0;
@@ -69,12 +88,13 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     padding: 8px 16px calc(16px + var(--safe-bottom));
     transform: translateY(0);
     transition: transform 0.25s ease;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
   }
 
   .sheet-handle {
     width: 36px;
     height: 4px;
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--border);
     border-radius: 2px;
     margin: 4px auto 8px;
     cursor: pointer;
@@ -95,7 +115,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   .close-btn {
     background: none;
     border: none;
-    color: #fff;
+    color: var(--fg);
     font-size: 16px;
     cursor: pointer;
   }
@@ -115,7 +135,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 
   .review-item {
     padding: 10px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--border);
   }
 
   .review-item .review-author {
@@ -141,7 +161,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 
   .review-item .review-text {
     font-size: 13px;
-    color: #eee;
+    color: var(--fg);
     margin-top: 4px;
   }
 
@@ -156,7 +176,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid var(--border);
     padding-top: 12px;
   }
 
@@ -169,13 +189,79 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     background: none;
     border: none;
     font-size: 22px;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--border);
     cursor: pointer;
     padding: 0;
   }
 
   .star.selected {
     color: var(--secondary);
+  }
+
+  .star:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .verify-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .verify-btn {
+    background: var(--card-bg);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .verify-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .code-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .code-row input {
+    flex: 1;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    padding: 10px;
+    color: var(--fg);
+    font-size: 14px;
+  }
+
+  .verify-status {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .verify-status.success {
+    color: #12b76a;
+  }
+
+  .verify-status.error {
+    color: #ff6b6b;
+  }
+
+  .verify-hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin: -4px 0 0;
+  }
+
+  .verify-hint.hidden-hint {
+    display: none;
   }
 
   .cf-turnstile {
@@ -188,11 +274,11 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   .review-form input[type='text'],
   .review-form input[type='email'],
   .review-form textarea {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
     border-radius: 8px;
     padding: 10px;
-    color: #fff;
+    color: var(--fg);
     font-size: 14px;
     resize: none;
   }

@@ -12,10 +12,12 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const category = url.searchParams.get('category');
   const search = url.searchParams.get('search');
   const page = url.searchParams.get('page');
+  const include = url.searchParams.get('include');
   if (category) params.set('category', category);
   if (search) params.set('search', search);
+  if (include) params.set('include', include);
   params.set('page', page ?? '1');
-  params.set('per_page', '20');
+  params.set('per_page', include ? String(include.split(',').length) : '20');
   params.set('status', 'publish');
 
   try {

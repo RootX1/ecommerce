@@ -29,7 +29,7 @@ import { withBase } from '../lib/base';
     display: flex;
     gap: 10px;
     padding: 10px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--border);
     align-items: center;
   }
   .cart-item img {
@@ -64,9 +64,9 @@ import { withBase } from '../lib/base';
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--border);
     background: none;
-    color: #fff;
+    color: var(--fg);
     cursor: pointer;
   }
   .remove-btn {

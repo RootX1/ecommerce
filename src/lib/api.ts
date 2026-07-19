@@ -31,6 +31,62 @@ export async function fetchReviews(productId: number) {
   return res.json();
 }
 
+/** Fetches full product records for a set of saved ids (e.g. the wishlist). */
+export async function fetchProductsByIds(ids: (string | number)[]) {
+  if (ids.length === 0) return [];
+  const res = await fetch(`${withBase('/api/products')}?include=${ids.join(',')}`);
+  if (!res.ok) throw new Error('Failed to load products');
+  return res.json();
+}
+
+/** Sends a one-time verification code to an email address. */
+export async function requestEmailCode(email: string): Promise<void> {
+  const res = await fetch(withBase('/api/verify-email/request'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const err: { error?: string } = await res.json().catch(() => ({ error: 'Unable to send code' }));
+    throw new Error(err.error ?? 'Unable to send code');
+  }
+}
+
+/** Confirms a one-time verification code, marking the email as verified. */
+export async function confirmEmailCode(email: string, code: string): Promise<void> {
+  const res = await fetch(withBase('/api/verify-email/confirm'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code }),
+  });
+  if (!res.ok) {
+    const err: { error?: string } = await res.json().catch(() => ({ error: 'Incorrect or expired code' }));
+    throw new Error(err.error ?? 'Incorrect or expired code');
+  }
+}
+
+export interface OrderSummary {
+  id: number;
+  status: string;
+  date_created: string;
+  total: string;
+  line_items: { name: string; quantity: number }[];
+}
+
+/** Looks up orders for an email the visitor has already verified via requestEmailCode/confirmEmailCode. */
+export async function fetchOrdersByEmail(email: string): Promise<OrderSummary[]> {
+  const res = await fetch(withBase('/api/orders'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const err: { error?: string } = await res.json().catch(() => ({ error: 'Unable to load orders' }));
+    throw new Error(err.error ?? 'Unable to load orders');
+  }
+  return res.json();
+}
+
 export interface SubmitReviewInput {
   productId: number;
   rating: number;
@@ -91,10 +147,13 @@ export interface BacsAccountDetail {
 
 export interface CheckoutResult {
   orderId: number;
+  items: { name: string; quantity: number; unitPrice: number }[];
   itemsTotal: number;
   shippingCost: number;
   shippingTitle: string;
   total: number;
+  paymentMethodTitle: string;
+  billingEmail: string;
   instructions: string;
   accountDetails: BacsAccountDetail[];
 }

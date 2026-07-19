@@ -6,9 +6,11 @@ import '../styles/global.css';
 interface Props {
   title: string;
   description?: string;
+  /** The immersive video feed hides the header to stay full-bleed; every other page shows it. */
+  showHeader?: boolean;
 }
 
-const { title, description = 'TikTok-style video shopping, made in Cape Town.' } = Astro.props;
+const { title, description = 'TikTok-style video shopping, made in Cape Town.', showHeader = true } = Astro.props;
 const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 ---
 
@@ -19,11 +21,19 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#00406d" />
     {turnstileSiteKey && <script is:inline defer src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>}
   </head>
   <body>
     <div class="app-shell">
+      {
+        showHeader && (
+          <header class="site-header">
+            <span class="site-logo-name">ecommercegoods.co.za</span>
+            <span class="site-logo-tag">Personalised Gifts</span>
+          </header>
+        )
+      }
       <main class="app-main">
         <slot />
       </main>
@@ -47,6 +57,25 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 </html>
 
 <style>
+  .site-header {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 14px;
+    background: var(--primary);
+    color: var(--primary-text);
+    flex-shrink: 0;
+  }
+  .site-logo-name {
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: -0.02em;
+  }
+  .site-logo-tag {
+    font-size: 12px;
+    color: var(--secondary);
+    font-weight: 600;
+  }
   .cart-pill {
     position: fixed;
     top: calc(12px + env(safe-area-inset-top, 0px));

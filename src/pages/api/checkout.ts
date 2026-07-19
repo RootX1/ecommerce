@@ -171,10 +171,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
   return new Response(
     JSON.stringify({
       orderId,
+      items: payload.items.map((item) => ({ name: item.name, quantity: item.quantity, unitPrice: item.unitPrice })),
       itemsTotal,
       shippingCost: shipping.cost,
       shippingTitle: shipping.methodTitle,
       total: grandTotal,
+      paymentMethodTitle: 'Direct Bank Transfer',
+      billingEmail: billing.email,
       instructions,
       accountDetails,
     }),

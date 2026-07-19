@@ -39,6 +39,7 @@ export interface WooProduct {
   regular_price: string;
   average_rating: string;
   rating_count: number;
+  short_description: string;
   images: { src: string }[];
   categories: { id: number; name: string; slug: string }[];
   meta_data: { key: string; value: unknown }[];
@@ -116,6 +117,23 @@ export function updateOrderStatus(env: WooCommerceEnv, orderId: string | number,
 
 export function getOrder(env: WooCommerceEnv, orderId: string | number) {
   return wooFetch(env, `/orders/${orderId}`);
+}
+
+export interface WooOrder {
+  id: number;
+  status: string;
+  date_created: string;
+  total: string;
+  billing: { email: string };
+  line_items: { name: string; quantity: number }[];
+}
+
+/** Looks up orders placed under a given billing email — used for the account "Orders" tab. */
+export function getOrdersByEmail(env: WooCommerceEnv, email: string) {
+  const params = new URLSearchParams({ search: email, per_page: '50' });
+  return wooFetch<WooOrder[]>(env, `/orders?${params.toString()}`).then((orders) =>
+    orders.filter((o) => o.billing?.email?.toLowerCase() === email.toLowerCase())
+  );
 }
 
 export interface BacsAccountDetail {
