@@ -44,6 +44,7 @@ const feedData = products.map((p) => ({
 
 <script>
   import { submitReview } from '../lib/api';
+  import { withBase } from '../lib/base';
 
   interface FeedProduct {
     id: string;
@@ -307,7 +308,7 @@ const feedData = products.map((p) => ({
   function openShareSheet(productId: string) {
     const product = productById.get(productId);
     if (!product || !shareBackdrop) return;
-    const url = `${window.location.origin}/product/${product.slug}`;
+    const url = `${window.location.origin}${withBase(`/product/${product.slug}`)}`;
     const message = `Check out ${product.title} — buy now: ${url}`;
 
     const whatsapp = shareBackdrop.querySelector<HTMLAnchorElement>('[data-share-whatsapp]');

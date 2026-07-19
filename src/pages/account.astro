@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { withBase } from '../lib/base';
 ---
 
 <Layout title="My Account">
@@ -15,7 +16,7 @@ import Layout from '../layouts/Layout.astro';
 
     <div class="tab-panel" data-panel="orders">
       <p class="hint">Order history is fetched from WooCommerce once you're signed in.</p>
-      <a class="signin-btn" href="/login">Sign in to view orders</a>
+      <a class="signin-btn" href={withBase('/login')}>Sign in to view orders</a>
     </div>
 
     <div class="tab-panel" data-panel="wishlist" hidden>

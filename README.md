@@ -6,8 +6,13 @@ Cape Town-based photographic/printing retail business.
 
 ## Stack
 
-- **Frontend**: Astro (static output) on Cloudflare Pages
-- **Backend**: WordPress + WooCommerce (headless, REST API only) on Xneelo
+- **Frontend**: Astro (static output) on Cloudflare Pages, served at
+  `yourdomain.co.za/store/` — a PATH on the primary domain, not a subdomain
+  (Xneelo charges extra for those; see `docs/DEPLOYMENT.md`). A Cloudflare
+  Worker (`workers/store-proxy.js`) routes `/store/*` to Cloudflare Pages;
+  everything else on the domain still goes straight to WordPress.
+- **Backend**: WordPress + WooCommerce (headless, REST API only) on Xneelo,
+  on the primary domain, unchanged
 - **Video**: Cloudflare R2 + CDN
 - **Payments**: PayFast (South Africa)
 - **Server logic**: Cloudflare Pages Functions (`functions/api/*`) — keeps
@@ -40,6 +45,7 @@ src/
   lib/            woocommerce.ts (server), payfast.ts, security.ts, api.ts (client), cart.ts
   data/           mockProducts.ts (placeholder catalog)
 functions/api/    products, reviews, checkout, payfast-webhook, contact
+workers/          store-proxy.js + wrangler.toml (path-based routing, no subdomain)
 docs/             SECURITY.md, DEPLOYMENT.md, R2_SETUP.md, PERFORMANCE.md
 ```
 

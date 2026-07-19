@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import { withBase } from '../../lib/base';
 ---
 
 <Layout title="Payment cancelled">
@@ -7,7 +8,7 @@ import Layout from '../../layouts/Layout.astro';
     <div class="cancel-icon">✕</div>
     <h1>Payment cancelled</h1>
     <p>Your payment was not completed. Your cart has been saved if you'd like to try again.</p>
-    <a class="continue-btn" href="/cart">Back to cart</a>
+    <a class="continue-btn" href={withBase('/cart')}>Back to cart</a>
   </div>
 </Layout>
 

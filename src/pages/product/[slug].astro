@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { mockProducts } from '../../data/mockProducts';
+import { withBase } from '../../lib/base';
 
 export function getStaticPaths() {
   return mockProducts.map((product) => ({
@@ -10,14 +11,14 @@ export function getStaticPaths() {
 }
 
 const { product } = Astro.props;
-if (!product) return Astro.redirect('/shop');
+if (!product) return Astro.redirect(withBase('/shop'));
 
 const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', currency: product.currency }).format(product.price);
 ---
 
 <Layout title={product.title}>
   <div class="product-page">
-    <a class="back-link" href="/">← Back</a>
+    <a class="back-link" href={withBase('/')}>← Back</a>
     <video class="product-video" src={product.videoUrl} poster={product.posterUrl} controls playsinline></video>
 
     <div class="product-details">
@@ -111,6 +112,7 @@ const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', curre
 
 <script>
   import { addToCart } from '../../lib/cart';
+  import { withBase } from '../../lib/base';
 
   function readButtonProduct(btn: HTMLElement) {
     return {
@@ -137,6 +139,6 @@ const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', curre
   document.querySelector('[data-buy-now]')?.addEventListener('click', (e) => {
     const btn = e.currentTarget as HTMLElement;
     addToCart({ ...readButtonProduct(btn), quantity: currentQty() });
-    window.location.href = '/checkout';
+    window.location.href = withBase('/checkout');
   });
 </script>

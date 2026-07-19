@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { withBase } from '../lib/base';
 ---
 
 <Layout title="Your cart">
@@ -11,7 +12,7 @@ import Layout from '../layouts/Layout.astro';
       <span>Total</span>
       <strong data-cart-total></strong>
     </div>
-    <a class="checkout-btn" href="/checkout" data-checkout-btn>Checkout</a>
+    <a class="checkout-btn" href={withBase('/checkout')} data-checkout-btn>Checkout</a>
   </div>
 </Layout>
 

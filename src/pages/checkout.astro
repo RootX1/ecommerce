@@ -94,6 +94,7 @@ import Layout from '../layouts/Layout.astro';
 <script>
   import { getCart, cartTotal } from '../lib/cart';
   import { startCheckout, redirectToPayfast } from '../lib/api';
+  import { withBase } from '../lib/base';
 
   const summaryEl = document.querySelector<HTMLElement>('[data-order-summary]')!;
   const form = document.querySelector<HTMLFormElement>('[data-checkout-form]')!;
@@ -105,7 +106,7 @@ import Layout from '../layouts/Layout.astro';
 
   const cart = getCart();
   if (cart.length === 0) {
-    window.location.href = '/cart';
+    window.location.href = withBase('/cart');
   } else {
     summaryEl.innerHTML = `${cart.length} item(s) · Total: <strong>${formatZar(cartTotal(cart))}</strong>`;
   }

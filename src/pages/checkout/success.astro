@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import { withBase } from '../../lib/base';
 ---
 
 <Layout title="Order confirmed">
@@ -7,7 +8,7 @@ import Layout from '../../layouts/Layout.astro';
     <div class="check-icon">✓</div>
     <h1>Order confirmed</h1>
     <p>Thank you for your order! We've emailed your confirmation and will notify you as it ships.</p>
-    <a class="continue-btn" href="/">Continue shopping</a>
+    <a class="continue-btn" href={withBase('/')}>Continue shopping</a>
   </div>
 </Layout>
 

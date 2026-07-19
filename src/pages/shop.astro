@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { mockProducts } from '../data/mockProducts';
+import { withBase } from '../lib/base';
 
 const categories = [...new Set(mockProducts.map((p) => p.category))];
 ---
@@ -11,7 +12,7 @@ const categories = [...new Set(mockProducts.map((p) => p.category))];
     <div class="category-grid">
       {
         categories.map((category) => (
-          <a class="category-card" href={`/shop/${encodeURIComponent(category.toLowerCase().replace(/\s+/g, '-'))}`}>
+          <a class="category-card" href={withBase(`/shop/${encodeURIComponent(category.toLowerCase().replace(/\s+/g, '-'))}`)}>
             {category}
           </a>
         ))
@@ -22,7 +23,7 @@ const categories = [...new Set(mockProducts.map((p) => p.category))];
     <div class="product-grid">
       {
         mockProducts.map((product) => (
-          <a class="product-card" href={`/product/${product.slug}`}>
+          <a class="product-card" href={withBase(`/product/${product.slug}`)}>
             <img src={product.posterUrl} alt={product.title} loading="lazy" />
             <div class="product-card-info">
               <p class="product-card-title">{product.title}</p>

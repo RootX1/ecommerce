@@ -1,5 +1,6 @@
 ---
 import type { Product } from '../data/mockProducts';
+import { withBase } from '../lib/base';
 
 interface Props {
   product: Product;
@@ -19,7 +20,7 @@ const { product } = Astro.props;
     <span class="count">{product.reviewCount}</span>
   </button>
 
-  <a class="action-btn" href={`/product/${product.slug}`} aria-label="View product page">
+  <a class="action-btn" href={withBase(`/product/${product.slug}`)} aria-label="View product page">
     <span class="icon bag" aria-hidden="true"></span>
     <span class="count">Buy</span>
   </a>

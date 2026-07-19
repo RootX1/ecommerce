@@ -1,5 +1,8 @@
 // Browser-side fetch wrappers. These call our own /api/* Cloudflare
 // Pages Functions — never WooCommerce directly — so secrets stay server-side.
+// Requests are prefixed with the storefront's base path since the site is
+// served at yourdomain.co.za/store/ rather than a subdomain (see base.ts).
+import { withBase } from './base';
 
 export interface CartItem {
   productId: number;
@@ -15,13 +18,13 @@ export async function fetchProducts(params: { category?: string; search?: string
   if (params.category) qs.set('category', params.category);
   if (params.search) qs.set('search', params.search);
   if (params.page) qs.set('page', String(params.page));
-  const res = await fetch(`/api/products?${qs.toString()}`);
+  const res = await fetch(`${withBase('/api/products')}?${qs.toString()}`);
   if (!res.ok) throw new Error('Failed to load products');
   return res.json();
 }
 
 export async function fetchReviews(productId: number) {
-  const res = await fetch(`/api/reviews?product=${productId}`);
+  const res = await fetch(`${withBase('/api/reviews')}?product=${productId}`);
   if (!res.ok) throw new Error('Failed to load reviews');
   return res.json();
 }
@@ -38,7 +41,7 @@ export interface SubmitReviewInput {
 }
 
 export async function submitReview(input: SubmitReviewInput) {
-  const res = await fetch('/api/reviews', {
+  const res = await fetch(withBase('/api/reviews'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -61,7 +64,7 @@ export interface CheckoutBilling {
 }
 
 export async function startCheckout(items: CartItem[], billing: CheckoutBilling) {
-  const res = await fetch('/api/checkout', {
+  const res = await fetch(withBase('/api/checkout'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

@@ -1,12 +1,15 @@
 ---
+import { withBase } from '../lib/base';
+
 const path = Astro.url.pathname;
-const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
+const homeHref = withBase('/');
+const isActive = (href: string) => (href === homeHref ? path === homeHref : path.startsWith(href));
 
 const items = [
-  { href: '/', label: 'Home', icon: 'home' },
-  { href: '/shop', label: 'Shop', icon: 'grid' },
-  { href: '/contact', label: 'Contact', icon: 'mail' },
-  { href: '/account', label: 'Profile', icon: 'user' },
+  { href: homeHref, label: 'Home', icon: 'home' },
+  { href: withBase('/shop'), label: 'Shop', icon: 'grid' },
+  { href: withBase('/contact'), label: 'Contact', icon: 'mail' },
+  { href: withBase('/account'), label: 'Profile', icon: 'user' },
 ];
 ---
 

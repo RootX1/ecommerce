@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { mockProducts } from '../../data/mockProducts';
+import { withBase } from '../../lib/base';
 
 export function getStaticPaths() {
   const categories = [...new Set(mockProducts.map((p) => p.category))];
@@ -16,12 +17,12 @@ const products = mockProducts.filter((p) => p.category === category);
 
 <Layout title={category}>
   <div class="category-page">
-    <a class="back-link" href="/shop">← Shop</a>
+    <a class="back-link" href={withBase('/shop')}>← Shop</a>
     <h1>{category}</h1>
     <div class="product-grid">
       {
         products.map((product) => (
-          <a class="product-card" href={`/product/${product.slug}`}>
+          <a class="product-card" href={withBase(`/product/${product.slug}`)}>
             <img src={product.posterUrl} alt={product.title} loading="lazy" />
             <div class="product-card-info">
               <p class="product-card-title">{product.title}</p>

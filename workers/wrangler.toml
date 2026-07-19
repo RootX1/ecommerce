@@ -1,0 +1,12 @@
+# Deploy with: npx wrangler deploy (run from the workers/ directory)
+# This is a SEPARATE Worker from the Cloudflare Pages project — it only
+# routes /store/* on the primary domain to the Pages deployment. See
+# docs/DEPLOYMENT.md, "Phase 3 — Path-based routing (no subdomain)".
+name = "store-proxy"
+main = "store-proxy.js"
+compatibility_date = "2024-11-01"
+
+routes = [
+  { pattern = "yourdomain.co.za/store", zone_name = "yourdomain.co.za" },
+  { pattern = "yourdomain.co.za/store/*", zone_name = "yourdomain.co.za" }
+]
