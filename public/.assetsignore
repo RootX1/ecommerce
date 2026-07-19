@@ -1,4 +1,10 @@
 # Cloudflare's build pipeline (wrangler) expects this file to exist for
 # Astro/Workers-Assets deployments. It works like .gitignore, but for
 # which files under `public/` are excluded from being served as static
-# assets. Nothing needs excluding here yet.
+# assets.
+
+# _worker.js is the compiled bundle of functions/api/* — it's the actual
+# server-side Worker code Cloudflare executes, not a file to serve raw.
+# Without this line, wrangler treats it as a plain downloadable asset,
+# which would leak the Pages Functions source publicly.
+_worker.js
