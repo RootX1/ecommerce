@@ -4,22 +4,27 @@
 // while afterwards. State lives in the same rate-limit KV namespace, keyed
 // separately from the rate-limit counters.
 import type { KVNamespace } from '@cloudflare/workers-types';
-import { sendEmail } from './email';
+import { sendEmail, type SmtpEnv } from './email';
 
 const CODE_TTL_SECONDS = 600; // 10 minutes to enter the code
 const VERIFIED_TTL_SECONDS = 60 * 60 * 24 * 90; // verified for 90 days
+
+interface VerificationEnv extends SmtpEnv {
+  RATE_LIMIT_KV: KVNamespace;
+  CONTACT_FROM_EMAIL: string;
+}
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-export async function sendVerificationCode(kv: KVNamespace, fromEmail: string, email: string): Promise<boolean> {
+export async function sendVerificationCode(env: VerificationEnv, email: string): Promise<boolean> {
   const normalized = normalizeEmail(email);
   const code = String(Math.floor(100000 + Math.random() * 900000));
-  await kv.put(`email-code:${normalized}`, code, { expirationTtl: CODE_TTL_SECONDS });
-  return sendEmail({
+  await env.RATE_LIMIT_KV.put(`email-code:${normalized}`, code, { expirationTtl: CODE_TTL_SECONDS });
+  return sendEmail(env, {
     to: normalized,
-    from: fromEmail,
+    from: env.CONTACT_FROM_EMAIL,
     fromName: 'Ecommerce Goods',
     subject: 'Your verification code',
     text: `Your verification code is ${code}.\n\nIt expires in 10 minutes. If you didn't request this, you can ignore this email.`,

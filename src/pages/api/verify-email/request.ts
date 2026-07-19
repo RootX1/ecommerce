@@ -35,7 +35,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
   }
 
-  const sent = await sendVerificationCode(env.RATE_LIMIT_KV, env.CONTACT_FROM_EMAIL, email);
+  const sent = await sendVerificationCode(env, email);
   if (!sent) {
     return new Response(JSON.stringify({ error: 'Unable to send a verification code right now.' }), { status: 502 });
   }

@@ -133,7 +133,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     const itemLines = payload.items.map((item) => `  ${item.quantity} x ${item.name} — ${formatZar(item.unitPrice * item.quantity)}`).join('\n');
-    await sendEmail({
+    await sendEmail(env, {
       to: billing.email,
       from: env.CONTACT_FROM_EMAIL,
       fromName: 'Ecommerce Goods',

@@ -15,6 +15,12 @@ interface Env {
   TURNSTILE_SECRET_KEY: string;
   CONTACT_TO_EMAIL: string;
   CONTACT_FROM_EMAIL: string;
+  // Xneelo's own SMTP mail server for sales@ecommercegoods.co.za — email is
+  // sent by connecting directly to this, not via MailChannels/Cloudflare.
+  SMTP_HOST: string;
+  SMTP_PORT: string;
+  SMTP_USERNAME: string;
+  SMTP_PASSWORD: string;
   RATE_LIMIT_KV: KVNamespace;
   UPLOADS_BUCKET: R2Bucket;
 }

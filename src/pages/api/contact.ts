@@ -1,7 +1,7 @@
 // POST /api/contact
-// Spam-protected contact form handler. Sends via MailChannels, which is
-// free to use from Cloudflare Workers once a DNS lockdown TXT record is
-// added for the sending domain (see docs/SECURITY.md).
+// Spam-protected contact form handler. Sends via SMTP straight to Xneelo's
+// mail server for sales@ecommercegoods.co.za (see src/lib/email.ts) —
+// no MailChannels or other Cloudflare-hosted relay involved.
 import type { APIRoute } from 'astro';
 import { sanitizeText, containsLinkOrScript, honeypotTripped, verifyTurnstile, checkRateLimit, clientIp } from '../../lib/security';
 import { sendEmail } from '../../lib/email';
@@ -51,7 +51,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response(JSON.stringify({ error: 'Links are not allowed in this form.' }), { status: 400 });
   }
 
-  const sent = await sendEmail({
+  const sent = await sendEmail(env, {
     to: env.CONTACT_TO_EMAIL,
     from: env.CONTACT_FROM_EMAIL,
     fromName: 'Website Contact Form',

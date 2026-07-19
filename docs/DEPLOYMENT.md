@@ -89,29 +89,35 @@ controls — so the repo is built to match it:
       npx wrangler secret put TURNSTILE_SECRET_KEY
       npx wrangler secret put CONTACT_TO_EMAIL
       npx wrangler secret put CONTACT_FROM_EMAIL
+      npx wrangler secret put SMTP_HOST
+      npx wrangler secret put SMTP_PORT
+      npx wrangler secret put SMTP_USERNAME
+      npx wrangler secret put SMTP_PASSWORD
       ```
       (Each prompts for the value interactively — nothing sensitive is typed
       into a file or committed.) Secrets set this way persist across
       deploys regardless of what's in `wrangler.jsonc`.
 - [ ] Confirm the domain's DNS is proxied through Cloudflare (orange cloud)
       — `routes` bindings only apply to proxied traffic.
-- [ ] **Add the MailChannels domain lockdown DNS record** — without this,
-      every email sent by the Worker (contact form, order confirmations,
-      verification codes) silently fails. In the Cloudflare DNS dashboard for
-      `ecommercegoods.co.za`, add a TXT record:
-      - Name: `_mailchannels`
-      - Content: `v=mc1 cfid=<your-worker-subdomain>.workers.dev`
-        (find `<your-worker-subdomain>` under Workers & Pages → your worker
-        → Settings → Domains & Routes; it's the `*.workers.dev` name even
-        though the Worker itself is only reachable via the custom domain
-        route). See MailChannels' "Domain Lockdown" docs for the exact
-        current format if this changes.
-      - A basic SPF record (`v=spf1 include:relay.mailchannels.net ~all`) is
-        also recommended so recipient mail servers don't flag the messages
-        as spoofed.
-      Verify it resolved with `dig TXT _mailchannels.ecommercegoods.co.za`
-      before assuming it's live — DNS changes can take a few minutes to
-      propagate.
+- [ ] **Set up the SMTP secrets for sending mail** — contact-form messages,
+      order confirmations, and review/order verification codes are all sent
+      by the Worker connecting directly to Xneelo's own mail server for
+      `sales@ecommercegoods.co.za` (via `worker-mailer`, over Cloudflare TCP
+      Sockets) — nothing routes through MailChannels or any other
+      Cloudflare-hosted relay, so there's no extra DNS record to add on top
+      of what Xneelo already has configured for this mailbox.
+      - `CONTACT_FROM_EMAIL` / `CONTACT_TO_EMAIL`: `sales@ecommercegoods.co.za`
+      - `SMTP_USERNAME`: the mailbox's full login, normally
+        `sales@ecommercegoods.co.za`
+      - `SMTP_PASSWORD`: that mailbox's password
+      - `SMTP_HOST` / `SMTP_PORT`: the same outgoing mail server settings
+        Xneelo gives you for configuring Outlook/phone mail apps — check
+        Xneelo's control panel or existing email client setup for the exact
+        hostname (commonly `mail.ecommercegoods.co.za` or a Xneelo-specific
+        server name) and port (`587` with STARTTLS, or `465` for implicit
+        TLS — both are supported; Workers cannot use port `25`).
+      - Test it by submitting the contact form after deploying, and confirm
+        `sales@ecommercegoods.co.za` receives it.
 - [ ] Push to the connected branch (or trigger a deploy) and check the build
       log completes without the `_worker.js`/asset errors this project hit
       earlier — `npm run build` includes a postbuild step

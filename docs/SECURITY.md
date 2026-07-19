@@ -53,10 +53,16 @@ put`, never `wrangler.jsonc`) — none of these ever reach the browser.
   also reads a `.dev.vars` file for binding-shaped local secrets.
 - Production: non-secret values live in the committed `wrangler.jsonc`
   under `vars`. Actual secrets (`WOOCOMMERCE_CONSUMER_KEY/SECRET`,
-  `TURNSTILE_SECRET_KEY`, `CONTACT_TO_EMAIL`/`CONTACT_FROM_EMAIL`) are set
-  with `wrangler secret put <NAME>` — never put them in `wrangler.jsonc`
+  `TURNSTILE_SECRET_KEY`, `CONTACT_TO_EMAIL`/`CONTACT_FROM_EMAIL`,
+  `SMTP_HOST`/`SMTP_PORT`/`SMTP_USERNAME`/`SMTP_PASSWORD`) are set with
+  `wrangler secret put <NAME>` — never put them in `wrangler.jsonc`
   (it's committed to git) or as plain dashboard env vars (those get
   silently overwritten by `wrangler.jsonc`'s `vars` on every deploy).
+- Outbound email (`src/lib/email.ts`) connects directly over SMTP to
+  Xneelo's mail server for `sales@ecommercegoods.co.za` using
+  `worker-mailer` (Cloudflare TCP Sockets) — deliberately not a
+  Cloudflare-hosted relay like MailChannels, since Xneelo already hosts
+  this mailbox and its outbound reputation/SPF.
 - Rotate the WooCommerce Consumer Key/Secret and Turnstile secret
   immediately if they are ever exposed in a log, screenshot, or commit.
 
