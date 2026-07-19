@@ -9,6 +9,12 @@ import { withBase } from '../../lib/base';
     <h1>Order received</h1>
     <p data-order-ref>Thank you! We've emailed your order confirmation.</p>
 
+    <div class="order-breakdown" data-order-breakdown hidden>
+      <div class="breakdown-row"><span>Items</span><span data-breakdown-items></span></div>
+      <div class="breakdown-row"><span data-breakdown-shipping-label>Delivery</span><span data-breakdown-shipping></span></div>
+      <div class="breakdown-row total"><span>Total</span><span data-breakdown-total></span></div>
+    </div>
+
     <div class="bank-details" data-bank-details hidden>
       <h2>Bank transfer details</h2>
       <p class="instructions" data-instructions></p>
@@ -52,6 +58,30 @@ import { withBase } from '../../lib/base';
     color: var(--muted);
     font-size: 14px;
     max-width: 340px;
+  }
+  .order-breakdown {
+    background: #111;
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-top: 16px;
+    width: 100%;
+    max-width: 340px;
+    text-align: left;
+    font-size: 13px;
+  }
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    color: var(--muted);
+  }
+  .breakdown-row.total {
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 6px;
+    padding-top: 8px;
   }
   .bank-details {
     background: #111;
@@ -108,6 +138,11 @@ import { withBase } from '../../lib/base';
   const ORDER_STORAGE_KEY = 'tiktok-shop-last-order';
 
   const orderRefEl = document.querySelector<HTMLElement>('[data-order-ref]')!;
+  const breakdownEl = document.querySelector<HTMLElement>('[data-order-breakdown]')!;
+  const breakdownItemsEl = document.querySelector<HTMLElement>('[data-breakdown-items]')!;
+  const breakdownShippingLabelEl = document.querySelector<HTMLElement>('[data-breakdown-shipping-label]')!;
+  const breakdownShippingEl = document.querySelector<HTMLElement>('[data-breakdown-shipping]')!;
+  const breakdownTotalEl = document.querySelector<HTMLElement>('[data-breakdown-total]')!;
   const bankDetailsEl = document.querySelector<HTMLElement>('[data-bank-details]')!;
   const instructionsEl = document.querySelector<HTMLElement>('[data-instructions]')!;
   const fieldsEl = document.querySelector<HTMLElement>('[data-account-fields]')!;
@@ -121,11 +156,21 @@ import { withBase } from '../../lib/base';
     bic: 'SWIFT/BIC',
   };
 
+  function formatZar(amount: number): string {
+    return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(amount);
+  }
+
   const raw = sessionStorage.getItem(ORDER_STORAGE_KEY);
   if (raw) {
     try {
       const order: CheckoutResult = JSON.parse(raw);
       orderRefEl.textContent = `Order #${order.orderId} received — we've emailed your confirmation.`;
+
+      breakdownEl.hidden = false;
+      breakdownItemsEl.textContent = formatZar(order.itemsTotal);
+      breakdownShippingLabelEl.textContent = order.shippingTitle || 'Delivery';
+      breakdownShippingEl.textContent = order.shippingCost > 0 ? formatZar(order.shippingCost) : 'Free';
+      breakdownTotalEl.textContent = formatZar(order.total);
 
       if (order.accountDetails?.length) {
         bankDetailsEl.hidden = false;

@@ -91,9 +91,24 @@ export interface BacsAccountDetail {
 
 export interface CheckoutResult {
   orderId: number;
+  itemsTotal: number;
+  shippingCost: number;
+  shippingTitle: string;
   total: number;
   instructions: string;
   accountDetails: BacsAccountDetail[];
+}
+
+export interface ShippingInfo {
+  cost: number;
+  methodTitle: string;
+}
+
+/** Fetches the store's current delivery cost so it can be shown before checkout is submitted. */
+export async function fetchShippingCost(): Promise<ShippingInfo> {
+  const res = await fetch(withBase('/api/shipping'));
+  if (!res.ok) return { cost: 0, methodTitle: 'Delivery' };
+  return res.json();
 }
 
 export async function startCheckout(items: CartItem[], billing: CheckoutBilling): Promise<CheckoutResult> {

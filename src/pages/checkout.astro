@@ -45,6 +45,19 @@ import Layout from '../layouts/Layout.astro';
     font-size: 13px;
     color: var(--muted);
   }
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+  }
+  .summary-row.total {
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 6px;
+    padding-top: 8px;
+  }
   .checkout-form {
     display: flex;
     flex-direction: column;
@@ -93,7 +106,7 @@ import Layout from '../layouts/Layout.astro';
 
 <script>
   import { getCart, cartTotal, clearCart } from '../lib/cart';
-  import { startCheckout } from '../lib/api';
+  import { startCheckout, fetchShippingCost } from '../lib/api';
   import { withBase } from '../lib/base';
 
   const ORDER_STORAGE_KEY = 'tiktok-shop-last-order';
@@ -110,7 +123,18 @@ import Layout from '../layouts/Layout.astro';
   if (cart.length === 0) {
     window.location.href = withBase('/cart');
   } else {
-    summaryEl.innerHTML = `${cart.length} item(s) · Total: <strong>${formatZar(cartTotal(cart))}</strong>`;
+    const itemsTotal = cartTotal(cart);
+    summaryEl.innerHTML = `
+      <div class="summary-row"><span>${cart.length} item(s)</span><span>${formatZar(itemsTotal)}</span></div>
+      <div class="summary-row"><span>Delivery</span><span data-shipping-cost>calculating…</span></div>
+      <div class="summary-row total"><span>Total</span><span data-grand-total>${formatZar(itemsTotal)}</span></div>
+    `;
+    fetchShippingCost().then((shipping) => {
+      const shippingEl = document.querySelector('[data-shipping-cost]');
+      const totalEl = document.querySelector('[data-grand-total]');
+      if (shippingEl) shippingEl.textContent = shipping.cost > 0 ? formatZar(shipping.cost) : 'Free';
+      if (totalEl) totalEl.textContent = formatZar(itemsTotal + shipping.cost);
+    });
   }
 
   form.addEventListener('submit', async (e) => {

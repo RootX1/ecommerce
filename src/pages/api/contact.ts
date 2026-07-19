@@ -4,6 +4,7 @@
 // added for the sending domain (see docs/SECURITY.md).
 import type { APIRoute } from 'astro';
 import { sanitizeText, containsLinkOrScript, honeypotTripped, verifyTurnstile, checkRateLimit, clientIp } from '../../lib/security';
+import { sendEmail } from '../../lib/email';
 
 export const prerender = false;
 
@@ -50,19 +51,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response(JSON.stringify({ error: 'Links are not allowed in this form.' }), { status: 400 });
   }
 
-  const res = await fetch('https://api.mailchannels.net/tx/v1/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      personalizations: [{ to: [{ email: env.CONTACT_TO_EMAIL }] }],
-      from: { email: env.CONTACT_FROM_EMAIL, name: 'Website Contact Form' },
-      reply_to: { email },
-      subject: `New contact form message from ${name}`,
-      content: [{ type: 'text/plain', value: `From: ${name} <${email}>\n\n${message}` }],
-    }),
+  const sent = await sendEmail({
+    to: env.CONTACT_TO_EMAIL,
+    from: env.CONTACT_FROM_EMAIL,
+    fromName: 'Website Contact Form',
+    replyTo: email,
+    subject: `New contact form message from ${name}`,
+    text: `From: ${name} <${email}>\n\n${message}`,
   });
 
-  if (!res.ok) {
+  if (!sent) {
     return new Response(JSON.stringify({ error: 'Unable to send message right now.' }), { status: 502 });
   }
 

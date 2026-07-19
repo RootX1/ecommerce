@@ -90,11 +90,14 @@ export function createProductReview(env: WooCommerceEnv, input: NewReviewInput) 
 }
 
 export interface NewOrderInput {
+  status: string;
   payment_method: string;
   payment_method_title: string;
   set_paid: boolean;
   billing: Record<string, string>;
+  shipping: Record<string, string>;
   line_items: { product_id: number; quantity: number; meta_data?: { key: string; value: string }[] }[];
+  shipping_lines?: { method_id: string; method_title: string; total: string }[];
 }
 
 export function createOrder(env: WooCommerceEnv, input: NewOrderInput) {
@@ -135,4 +138,55 @@ export interface BacsGateway {
 /** Reads the "Direct bank transfer" gateway's live settings (account details are managed in WP admin, not hardcoded here). */
 export function getBacsGateway(env: WooCommerceEnv) {
   return wooFetch<BacsGateway>(env, '/payment_gateways/bacs');
+}
+
+interface ShippingZone {
+  id: number;
+  name: string;
+  order: number;
+}
+
+interface ShippingZoneMethod {
+  method_id: string;
+  method_title: string;
+  enabled: boolean;
+  settings: Record<string, { value: string }>;
+}
+
+export interface ShippingCost {
+  cost: number;
+  methodId: string;
+  methodTitle: string;
+}
+
+/**
+ * Reads delivery cost from WooCommerce → Settings → Shipping (Shipping
+ * Zones), rather than hardcoding a number here, so the store owner can
+ * change delivery pricing in wp-admin with no redeploy. Simplified: picks
+ * the first enabled flat-rate/free-shipping method across zones in
+ * priority order, since this storefront doesn't do per-address zone
+ * matching. Falls back to R0 delivery if no shipping is configured yet.
+ */
+export async function getDefaultShippingCost(env: WooCommerceEnv): Promise<ShippingCost> {
+  try {
+    const zones = await wooFetch<ShippingZone[]>(env, '/shipping/zones');
+    const ordered = [...zones.filter((z) => z.id !== 0)].sort((a, b) => a.order - b.order);
+    const zoneZero = zones.find((z) => z.id === 0);
+    if (zoneZero) ordered.push(zoneZero);
+
+    for (const zone of ordered) {
+      const methods = await wooFetch<ShippingZoneMethod[]>(env, `/shipping/zones/${zone.id}/methods`);
+      const flatRate = methods.find((m) => m.enabled && m.method_id === 'flat_rate');
+      if (flatRate) {
+        return { cost: Number(flatRate.settings?.cost?.value ?? '0'), methodId: 'flat_rate', methodTitle: flatRate.method_title || 'Delivery' };
+      }
+      const freeShipping = methods.find((m) => m.enabled && m.method_id === 'free_shipping');
+      if (freeShipping) {
+        return { cost: 0, methodId: 'free_shipping', methodTitle: freeShipping.method_title || 'Free Shipping' };
+      }
+    }
+  } catch {
+    // No shipping zones configured yet, or the endpoint errored — treat as free delivery rather than blocking checkout.
+  }
+  return { cost: 0, methodId: 'flat_rate', methodTitle: 'Delivery' };
 }
