@@ -66,6 +66,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!payload.items?.length) {
     return new Response(JSON.stringify({ error: 'Cart is empty' }), { status: 400 });
   }
+  // WooCommerce's REST API treats a line item with quantity <= 0 as a
+  // request to remove an existing order item, which crashes with a fatal
+  // error during order *creation* (there's no existing item to remove) —
+  // https://github.com/woocommerce/woocommerce/issues/54697. Reject bad
+  // items here instead of letting that request reach WooCommerce.
+  const hasInvalidItem = payload.items.some(
+    (item) => !Number.isInteger(item.productId) || item.productId <= 0 || !Number.isInteger(item.quantity) || item.quantity <= 0
+  );
+  if (hasInvalidItem) {
+    return new Response(JSON.stringify({ error: 'Cart contains an invalid item, please refresh your cart and try again.' }), { status: 400 });
+  }
 
   const firstName = sanitizeText(payload.billing.firstName, 60);
   const lastName = sanitizeText(payload.billing.lastName, 60);
