@@ -39,30 +39,56 @@ export async function fetchProductsByIds(ids: (string | number)[]) {
   return res.json();
 }
 
-/** Sends a one-time verification code to an email address. */
-export async function requestEmailCode(email: string): Promise<void> {
-  const res = await fetch(withBase('/api/verify-email/request'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
-  });
-  if (!res.ok) {
-    const err: { error?: string } = await res.json().catch(() => ({ error: 'Unable to send code' }));
-    throw new Error(err.error ?? 'Unable to send code');
-  }
+export interface AuthResult {
+  email: string;
+  name: string;
 }
 
-/** Confirms a one-time verification code, marking the email as verified. */
-export async function confirmEmailCode(email: string, code: string): Promise<void> {
-  const res = await fetch(withBase('/api/verify-email/confirm'), {
+/** Signs in with a real WooCommerce account (email + password). */
+export async function loginUser(email: string, password: string): Promise<AuthResult> {
+  const res = await fetch(withBase('/api/auth/login'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, code }),
+    body: JSON.stringify({ email, password }),
   });
   if (!res.ok) {
-    const err: { error?: string } = await res.json().catch(() => ({ error: 'Incorrect or expired code' }));
-    throw new Error(err.error ?? 'Incorrect or expired code');
+    const err: { error?: string } = await res.json().catch(() => ({ error: 'Sign in failed' }));
+    throw new Error(err.error ?? 'Sign in failed');
   }
+  return res.json();
+}
+
+export interface SignupInput {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
+/** Creates a new WooCommerce account and signs in immediately. */
+export async function signupUser(input: SignupInput): Promise<AuthResult> {
+  const res = await fetch(withBase('/api/auth/signup'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const err: { error?: string } = await res.json().catch(() => ({ error: 'Sign up failed' }));
+    throw new Error(err.error ?? 'Sign up failed');
+  }
+  return res.json();
+}
+
+/** Clears the current session (server-side and the cookie). */
+export async function logoutUser(): Promise<void> {
+  await fetch(withBase('/api/auth/logout'), { method: 'POST' });
+}
+
+/** Checks whether the browser currently holds a valid, server-verified session. */
+export async function fetchCurrentUser(): Promise<AuthResult | null> {
+  const res = await fetch(withBase('/api/auth/me'));
+  if (!res.ok) return null;
+  return res.json();
 }
 
 export interface OrderSummary {
@@ -73,13 +99,9 @@ export interface OrderSummary {
   line_items: { name: string; quantity: number }[];
 }
 
-/** Looks up orders for an email the visitor has already verified via requestEmailCode/confirmEmailCode. */
-export async function fetchOrdersByEmail(email: string): Promise<OrderSummary[]> {
-  const res = await fetch(withBase('/api/orders'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
-  });
+/** Looks up orders for the currently signed-in account (identity comes from the session cookie). */
+export async function fetchMyOrders(): Promise<OrderSummary[]> {
+  const res = await fetch(withBase('/api/orders'));
   if (!res.ok) {
     const err: { error?: string } = await res.json().catch(() => ({ error: 'Unable to load orders' }));
     throw new Error(err.error ?? 'Unable to load orders');
@@ -91,8 +113,6 @@ export interface SubmitReviewInput {
   productId: number;
   rating: number;
   text: string;
-  name: string;
-  email: string;
   turnstileToken: string;
   website?: string;
   isFirstTimeReviewer?: boolean;

@@ -66,24 +66,39 @@ put`, never `wrangler.jsonc`) — none of these ever reach the browser.
 - Rotate the WooCommerce Consumer Key/Secret and Turnstile secret
   immediately if they are ever exposed in a log, screenshot, or commit.
 
-## Reviews: verified email + moderation
+## Accounts: real WooCommerce login, session-cookie authorization
 
-- Before a review can be submitted, the reviewer must prove they own the
-  email address they entered: `POST /api/verify-email/request` emails a
-  6-digit one-time code (`src/lib/emailVerification.ts`), and
-  `POST /api/verify-email/confirm` checks it and marks that address
-  "verified" in the `RATE_LIMIT_KV` namespace for 90 days. This is a
-  lightweight gate, not a full customer-account system — there's no
-  password, and verification is per-email rather than per-person.
-- `src/pages/api/reviews.ts` independently re-checks `isEmailVerified()`
-  server-side before accepting a review, so the client-side UI gating in
-  `ReviewModal.astro`/`VideoFeed.astro` can't be bypassed by calling the API
-  directly.
+- Reviews and order lookups require a real WooCommerce account, not just an
+  email address. Sign-in (`POST /api/auth/login`, `src/lib/wpAuth.ts`) checks
+  the password against WordPress's own user table via the "JWT Authentication
+  for WP REST API" plugin's `/wp-json/jwt-auth/v1/token` endpoint — we never
+  store or reuse the JWT itself, it's only used once to confirm the password
+  is correct. Sign-up (`POST /api/auth/signup`) creates a real WooCommerce
+  customer via the admin REST API (`createCustomer` in `src/lib/woocommerce.ts`).
+- On success, either endpoint issues our **own** session: a random 32-byte
+  token stored server-side (`src/lib/session.ts`, `RATE_LIMIT_KV`, 30-day
+  TTL) mapped to `{email, name}`, sent to the browser as an `HttpOnly`,
+  `Secure`, `SameSite=Lax` cookie scoped to `/store`.
+- **This is the important part**: every gated endpoint
+  (`/api/reviews` POST, `/api/orders`) resolves identity by reading that
+  cookie and looking up the session server-side — never from an email/name
+  the client claims in the request body. Earlier iterations of this
+  gate (both a one-time-email-code version and, briefly, a "has this email
+  ever verified" KV flag) had a real flaw: anything that could send a
+  request with a target's email address could pass their gate, since
+  nothing tied "you proved a password" to "this specific request." The
+  `HttpOnly` cookie is what closes that gap — client-side JS can't read or
+  forge it, so only the browser that actually authenticated can act as
+  that account.
 - First-time reviewers' submissions are still marked `hold` so they sit in
   the WooCommerce moderation queue before appearing.
-- The same verified-email gate protects `/api/orders` (used by the account
-  page's Orders tab) — a visitor can only look up orders for an email they
-  just proved they control, not an arbitrary stranger's address.
+- `POST /api/auth/logout` deletes the server-side session and clears the
+  cookie. `GET /api/auth/me` lets the UI check real, current session state
+  instead of trusting anything cached client-side.
+- Login/signup are rate-limited per IP (`checkRateLimit`) same as
+  reviews/checkout/contact, but there is no per-account lockout — consider
+  adding a WordPress login-attempt-limiting plugin if brute-forcing a
+  specific customer's password becomes a concern.
 - Verified-purchase badges shown on existing reviews are driven by
   WooCommerce's own order history — cross-reference the reviewer's email
   against completed orders for that product (WooCommerce Product Reviews

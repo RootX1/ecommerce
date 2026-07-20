@@ -43,7 +43,7 @@ const feedData = products.map((p) => ({
 </style>
 
 <script>
-  import { submitReview, requestEmailCode, confirmEmailCode } from '../lib/api';
+  import { submitReview, loginUser, signupUser, logoutUser, fetchCurrentUser, type AuthResult } from '../lib/api';
   import { withBase } from '../lib/base';
 
   interface FeedProduct {
@@ -184,80 +184,97 @@ const feedData = products.map((p) => ({
   const stars = Array.from(document.querySelectorAll<HTMLElement>('.star'));
   let activeProductId: string | null = null;
 
-  // --- Email verification gate (reviews require a verified email) --------
-  const emailInput = document.querySelector<HTMLInputElement>('[data-review-email]');
-  const sendCodeBtn = document.querySelector<HTMLButtonElement>('[data-send-code]');
-  const codeRow = document.querySelector<HTMLElement>('[data-code-row]');
-  const codeInput = document.querySelector<HTMLInputElement>('[data-code-input]');
-  const confirmCodeBtn = document.querySelector<HTMLButtonElement>('[data-confirm-code]');
-  const verifyStatus = document.querySelector<HTMLElement>('[data-verify-status]');
-  const verifyHint = document.querySelector<HTMLElement>('[data-verify-hint]');
+  // --- Sign in / create account gate (reviews require a real account) ----
+  const authBlock = document.querySelector<HTMLElement>('[data-auth-block]');
+  const loginForm = document.querySelector<HTMLFormElement>('[data-login-form]');
+  const signupForm = document.querySelector<HTMLFormElement>('[data-signup-form]');
+  const authToggleBtn = document.querySelector<HTMLButtonElement>('[data-auth-toggle]');
+  const authStatus = document.querySelector<HTMLElement>('[data-auth-status]');
+  const signedInAs = document.querySelector<HTMLElement>('[data-signed-in-as]');
   const reviewTextarea = document.querySelector<HTMLTextAreaElement>('[data-review-text]');
   const submitBtn = document.querySelector<HTMLButtonElement>('[data-submit-btn]');
-  let verifiedEmail: string | null = null;
+  let currentUser: AuthResult | null = null;
 
-  function setVerifyStatus(message: string, kind: 'success' | 'error' | '') {
-    if (!verifyStatus) return;
-    verifyStatus.hidden = false;
-    verifyStatus.textContent = message;
-    verifyStatus.className = `verify-status${kind ? ` ${kind}` : ''}`;
+  function setAuthStatus(message: string, kind: 'success' | 'error' | '') {
+    if (!authStatus) return;
+    authStatus.hidden = false;
+    authStatus.textContent = message;
+    authStatus.className = `auth-status${kind ? ` ${kind}` : ''}`;
   }
 
-  function setReviewFormLocked(unlocked: boolean) {
-    stars.forEach((s) => (s as HTMLButtonElement).disabled = !unlocked);
-    if (reviewTextarea) reviewTextarea.disabled = !unlocked;
-    if (submitBtn) submitBtn.disabled = !unlocked;
-    if (verifyHint) verifyHint.hidden = unlocked;
+  function renderAuthState() {
+    const signedIn = !!currentUser;
+    if (authBlock) authBlock.hidden = signedIn;
+    stars.forEach((s) => ((s as HTMLButtonElement).disabled = !signedIn));
+    if (reviewTextarea) reviewTextarea.disabled = !signedIn;
+    if (submitBtn) submitBtn.disabled = !signedIn;
+    if (signedInAs) {
+      signedInAs.hidden = !signedIn;
+      if (signedIn && currentUser) {
+        signedInAs.innerHTML = '';
+        signedInAs.append(`Reviewing as ${currentUser.name || currentUser.email} · `);
+        const signOutLink = document.createElement('button');
+        signOutLink.type = 'button';
+        signOutLink.className = 'sign-out-link';
+        signOutLink.textContent = 'Sign out';
+        signOutLink.addEventListener('click', async () => {
+          await logoutUser();
+          currentUser = null;
+          renderAuthState();
+        });
+        signedInAs.appendChild(signOutLink);
+      }
+    }
   }
 
-  emailInput?.addEventListener('input', () => {
-    if (verifiedEmail && emailInput.value.trim().toLowerCase() !== verifiedEmail) {
-      verifiedEmail = null;
-      setReviewFormLocked(false);
-      if (verifyStatus) verifyStatus.hidden = true;
-      if (codeRow) codeRow.hidden = true;
+  authToggleBtn?.addEventListener('click', () => {
+    const showingSignup = !signupForm?.hidden;
+    if (loginForm) loginForm.hidden = showingSignup;
+    if (signupForm) signupForm.hidden = !showingSignup;
+    if (authToggleBtn) {
+      authToggleBtn.textContent = showingSignup ? "Don't have an account? Create one" : 'Already have an account? Sign in';
     }
+    if (authStatus) authStatus.hidden = true;
   });
 
-  sendCodeBtn?.addEventListener('click', async () => {
-    const email = emailInput?.value.trim() ?? '';
-    if (!email || !email.includes('@')) {
-      setVerifyStatus('Please enter a valid email address first.', 'error');
-      return;
-    }
-    sendCodeBtn.disabled = true;
+  loginForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(loginForm);
+    const submit = loginForm.querySelector<HTMLButtonElement>('.auth-submit-btn');
+    if (submit) submit.disabled = true;
     try {
-      await requestEmailCode(email);
-      if (codeRow) codeRow.hidden = false;
-      setVerifyStatus('Code sent — check your inbox.', 'success');
-    } catch (err) {
-      setVerifyStatus(err instanceof Error ? err.message : 'Unable to send code.', 'error');
-    } finally {
-      sendCodeBtn.disabled = false;
-    }
-  });
-
-  confirmCodeBtn?.addEventListener('click', async () => {
-    const email = emailInput?.value.trim() ?? '';
-    const code = codeInput?.value.trim() ?? '';
-    if (!code) {
-      setVerifyStatus('Enter the 6-digit code from your email.', 'error');
-      return;
-    }
-    confirmCodeBtn.disabled = true;
-    try {
-      await confirmEmailCode(email, code);
-      verifiedEmail = email.toLowerCase();
-      setReviewFormLocked(true);
-      setVerifyStatus('✓ Email verified — you can now write your review.', 'success');
-      // The Turnstile token issued when the sheet first opened is likely
-      // stale by now (the user just spent time fetching a code from their
-      // inbox) — refresh it so the token is fresh for the upcoming submit.
+      currentUser = await loginUser(String(formData.get('email') ?? ''), String(formData.get('password') ?? ''));
+      renderAuthState();
+      setAuthStatus(`✓ Signed in as ${currentUser.email}`, 'success');
+      // The Turnstile token issued when the sheet first opened may be
+      // stale by now — refresh it so it's fresh for the upcoming submit.
       resetTurnstile();
     } catch (err) {
-      setVerifyStatus(err instanceof Error ? err.message : 'Incorrect or expired code.', 'error');
+      setAuthStatus(err instanceof Error ? err.message : 'Sign in failed.', 'error');
     } finally {
-      confirmCodeBtn.disabled = false;
+      if (submit) submit.disabled = false;
+    }
+  });
+
+  signupForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(signupForm);
+    const submit = signupForm.querySelector<HTMLButtonElement>('.auth-submit-btn');
+    if (submit) submit.disabled = true;
+    try {
+      currentUser = await signupUser({
+        email: String(formData.get('email') ?? ''),
+        password: String(formData.get('password') ?? ''),
+        firstName: String(formData.get('firstName') ?? ''),
+        lastName: String(formData.get('lastName') ?? ''),
+      });
+      renderAuthState();
+      setAuthStatus(`✓ Account created — signed in as ${currentUser.email}`, 'success');
+      resetTurnstile();
+    } catch (err) {
+      setAuthStatus(err instanceof Error ? err.message : 'Sign up failed.', 'error');
+    } finally {
+      if (submit) submit.disabled = false;
     }
   });
 
@@ -269,6 +286,13 @@ const feedData = products.map((p) => ({
     const product = productById.get(productId);
     if (!product || !reviewBackdrop || !reviewList || !reviewSummary) return;
     activeProductId = productId;
+
+    // Re-check the real session on every open rather than trusting cached
+    // state — it may have expired or been signed out elsewhere.
+    fetchCurrentUser().then((user) => {
+      currentUser = user;
+      renderAuthState();
+    });
 
     reviewSummary.innerHTML = '';
     const avg = document.createElement('span');
@@ -316,10 +340,7 @@ const feedData = products.map((p) => ({
     stars.forEach((s) => s.classList.remove('selected'));
     if (ratingInput) ratingInput.value = '0';
     if (reviewError) reviewError.hidden = true;
-    verifiedEmail = null;
-    setReviewFormLocked(false);
-    if (verifyStatus) verifyStatus.hidden = true;
-    if (codeRow) codeRow.hidden = true;
+    if (authStatus) authStatus.hidden = true;
     resetTurnstile();
   }
 
@@ -343,9 +364,9 @@ const feedData = products.map((p) => ({
   reviewForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!activeProductId || !reviewError) return;
-    if (!verifiedEmail) {
+    if (!currentUser) {
       reviewError.hidden = false;
-      reviewError.textContent = 'Please verify your email before submitting a review.';
+      reviewError.textContent = 'Please sign in before submitting a review.';
       return;
     }
     const formData = new FormData(reviewForm);
@@ -364,8 +385,6 @@ const feedData = products.map((p) => ({
         productId: Number(activeProductId),
         rating,
         text: String(formData.get('text') ?? ''),
-        name: String(formData.get('name') ?? ''),
-        email: String(formData.get('email') ?? ''),
         turnstileToken: String(formData.get('cf-turnstile-response') ?? ''),
         website: String(formData.get('website') ?? ''),
         isFirstTimeReviewer: true,

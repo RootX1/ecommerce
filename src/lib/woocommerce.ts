@@ -136,6 +136,22 @@ export function getOrdersByEmail(env: WooCommerceEnv, email: string) {
   );
 }
 
+export interface NewCustomerInput {
+  email: string;
+  first_name: string;
+  last_name: string;
+  username: string;
+  password: string;
+}
+
+/** Creates a real WordPress user + WooCommerce customer — used by the storefront's signup form. */
+export function createCustomer(env: WooCommerceEnv, input: NewCustomerInput) {
+  return wooFetch(env, '/customers', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
 export interface BacsAccountDetail {
   account_name: string;
   account_number: string;

@@ -1,41 +1,30 @@
-// POST /api/orders { email }
-// Returns past orders placed under the given billing email — only once
-// that email has been verified via /api/verify-email (one-time code), so
-// this can't be used to look up a stranger's order history.
+// GET /api/orders
+// Returns past orders for the currently signed-in account. Identity comes
+// only from the session cookie (see src/lib/session.ts) — there is no way
+// to request another customer's orders by supplying their email.
 import type { APIRoute } from 'astro';
 import { getOrdersByEmail } from '../../lib/woocommerce';
-import { isEmailVerified } from '../../lib/emailVerification';
-import { sanitizeText, checkRateLimit, clientIp } from '../../lib/security';
+import { getSession, parseCookie, SESSION_COOKIE_NAME } from '../../lib/session';
+import { checkRateLimit, clientIp } from '../../lib/security';
 
 export const prerender = false;
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const GET: APIRoute = async ({ request, locals }) => {
   const env = locals.runtime.env;
   const ip = clientIp(request);
 
-  const withinLimit = await checkRateLimit(env.RATE_LIMIT_KV, `orders-lookup:${ip}`, 20, 600);
+  const withinLimit = await checkRateLimit(env.RATE_LIMIT_KV, `orders-lookup:${ip}`, 30, 600);
   if (!withinLimit) {
     return new Response(JSON.stringify({ error: 'Too many attempts, please try again shortly.' }), { status: 429 });
   }
 
-  let payload: { email?: string };
-  try {
-    payload = await request.json();
-  } catch {
-    return new Response(JSON.stringify({ error: 'Invalid request body' }), { status: 400 });
+  const token = parseCookie(request.headers.get('Cookie'), SESSION_COOKIE_NAME);
+  const session = await getSession(env.RATE_LIMIT_KV, token);
+  if (!session) {
+    return new Response(JSON.stringify({ error: 'Please sign in to view your orders.' }), { status: 401 });
   }
 
-  const email = sanitizeText(payload.email ?? '', 120);
-  if (!email) {
-    return new Response(JSON.stringify({ error: 'Missing email' }), { status: 400 });
-  }
-
-  const verified = await isEmailVerified(env.RATE_LIMIT_KV, email);
-  if (!verified) {
-    return new Response(JSON.stringify({ error: 'Please verify this email address first.' }), { status: 403 });
-  }
-
-  const orders = await getOrdersByEmail(env, email);
+  const orders = await getOrdersByEmail(env, session.email);
   return new Response(
     JSON.stringify(
       orders.map((o) => ({

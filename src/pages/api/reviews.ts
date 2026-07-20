@@ -3,7 +3,7 @@
 import type { APIRoute } from 'astro';
 import { listProductReviews, createProductReview } from '../../lib/woocommerce';
 import { sanitizeText, containsLinkOrScript, honeypotTripped, verifyTurnstile, checkRateLimit, clientIp } from '../../lib/security';
-import { isEmailVerified } from '../../lib/emailVerification';
+import { getSession, parseCookie, SESSION_COOKIE_NAME } from '../../lib/session';
 
 export const prerender = false;
 
@@ -24,8 +24,6 @@ interface ReviewPayload {
   productId: number;
   rating: number;
   text: string;
-  name: string;
-  email: string;
   turnstileToken: string;
   website?: string; // honeypot — must stay empty
   isFirstTimeReviewer?: boolean;
@@ -43,6 +41,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
   }
 
+  // 2. Identity comes ONLY from the session cookie — never from anything
+  // the client claims in the request body. This is what stops someone
+  // from posting a review "as" another customer just by knowing their
+  // email address.
+  const token = parseCookie(request.headers.get('Cookie'), SESSION_COOKIE_NAME);
+  const session = await getSession(env.RATE_LIMIT_KV, token);
+  if (!session) {
+    return new Response(JSON.stringify({ error: 'Please sign in to write a review.' }), { status: 401 });
+  }
+
   let payload: ReviewPayload;
   try {
     payload = await request.json();
@@ -50,12 +58,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response(JSON.stringify({ error: 'Invalid request body' }), { status: 400 });
   }
 
-  // 2. Honeypot — bots fill in hidden fields, real users never see them.
+  // 3. Honeypot — bots fill in hidden fields, real users never see them.
   if (honeypotTripped(payload.website)) {
     return new Response(JSON.stringify({ error: 'Submission rejected' }), { status: 400 });
   }
 
-  // 3. Cloudflare Turnstile.
+  // 4. Cloudflare Turnstile.
   const human = await verifyTurnstile(payload.turnstileToken, env.TURNSTILE_SECRET_KEY, ip);
   if (!human) {
     return new Response(JSON.stringify({ error: 'Verification failed, please try again.' }), { status: 400 });
@@ -63,25 +71,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const rating = Math.min(5, Math.max(1, Math.round(Number(payload.rating))));
   const text = sanitizeText(payload.text, 2000);
-  const name = sanitizeText(payload.name, 100);
 
-  // 4. Block links/scripts in review text outright.
-  if (containsLinkOrScript(text) || containsLinkOrScript(name)) {
+  // 5. Block links/scripts in review text outright.
+  if (containsLinkOrScript(text)) {
     return new Response(JSON.stringify({ error: 'Links are not allowed in reviews.' }), { status: 400 });
   }
 
-  if (!text || !name || !payload.email || !payload.productId) {
+  if (!text || !payload.productId) {
     return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
-  }
-
-  // 5. Reviews are only accepted from an email address the reviewer has
-  // verified via /api/verify-email (one-time code) — checked server-side
-  // regardless of what the client claims, so this can't be bypassed.
-  const verified = await isEmailVerified(env.RATE_LIMIT_KV, payload.email);
-  if (!verified) {
-    return new Response(JSON.stringify({ error: 'Please verify your email address before submitting a review.' }), {
-      status: 403,
-    });
   }
 
   // 6. First-time reviewers go to the moderation queue regardless of score.
@@ -90,8 +87,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const review = await createProductReview(env, {
     product_id: payload.productId,
     review: text,
-    reviewer: name,
-    reviewer_email: payload.email,
+    reviewer: session.name || session.email,
+    reviewer_email: session.email,
     rating,
     status,
   });

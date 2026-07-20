@@ -6,40 +6,66 @@ import Layout from '../layouts/Layout.astro';
   <div class="account-page">
     <h1>My Account</h1>
 
-    <div class="account-tabs">
-      <button class="tab active" data-tab="orders">Orders</button>
-      <button class="tab" data-tab="wishlist">Wishlist</button>
-      <button class="tab" data-tab="settings">Settings</button>
-    </div>
+    <div class="auth-gate" data-auth-gate>
+      <p class="auth-heading" data-auth-heading>Sign in to your account</p>
 
-    <div class="tab-panel" data-panel="orders">
-      <div class="verify-panel" data-orders-verify>
-        <p class="hint">Enter the email you ordered with to view your order history.</p>
-        <input type="email" placeholder="Your email" data-orders-email />
-        <button class="primary-btn" data-orders-send-code>Send verification code</button>
-        <div class="code-row" data-orders-code-row hidden>
-          <input type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" data-orders-code-input />
-          <button class="primary-btn" data-orders-confirm-code>Verify</button>
+      <form class="auth-form" data-login-form>
+        <input type="email" name="email" placeholder="Email" required maxlength="120" />
+        <input type="password" name="password" placeholder="Password" required maxlength="200" />
+        <button type="submit" class="primary-btn">Sign in</button>
+      </form>
+
+      <form class="auth-form" data-signup-form hidden>
+        <div class="field-row">
+          <input type="text" name="firstName" placeholder="First name" required maxlength="60" />
+          <input type="text" name="lastName" placeholder="Last name" required maxlength="60" />
         </div>
-        <p class="verify-status" data-orders-status hidden></p>
-      </div>
-      <div class="orders-list" data-orders-list hidden></div>
+        <input type="email" name="email" placeholder="Email" required maxlength="120" />
+        <input type="password" name="password" placeholder="Password (min 8 characters)" required minlength="8" maxlength="200" />
+        <button type="submit" class="primary-btn">Create account</button>
+      </form>
+
+      <button type="button" class="auth-toggle" data-auth-toggle>Don't have an account? Create one</button>
+      <p class="auth-status" data-auth-status hidden></p>
     </div>
 
-    <div class="tab-panel" data-panel="wishlist" hidden>
-      <div data-wishlist-list class="wishlist-grid"></div>
-      <p class="hint" data-wishlist-empty hidden>Your wishlist is empty — heart a product in the feed to save it here.</p>
+    <div data-account-body hidden>
+      <p class="signed-in-as" data-signed-in-as></p>
+
+      <div class="account-tabs">
+        <button class="tab active" data-tab="orders">Orders</button>
+        <button class="tab" data-tab="wishlist">Wishlist</button>
+        <button class="tab" data-tab="settings">Settings</button>
+      </div>
+
+      <div class="tab-panel" data-panel="orders">
+        <div class="orders-list" data-orders-list></div>
+      </div>
+
+      <div class="tab-panel" data-panel="wishlist" hidden>
+        <div data-wishlist-list class="wishlist-grid"></div>
+        <p class="hint" data-wishlist-empty hidden>Your wishlist is empty — heart a product in the feed to save it here.</p>
+      </div>
+
+      <div class="tab-panel" data-panel="settings" hidden>
+        <div class="settings-card">
+          <dl class="settings-fields">
+            <dt>Email</dt>
+            <dd data-settings-email></dd>
+            <dt>Name</dt>
+            <dd data-settings-name></dd>
+          </dl>
+        </div>
+        <p class="hint">Delivery address and password are managed via your order confirmations and WhatsApp/email support for now.</p>
+        <button type="button" class="logout-btn" data-logout-btn>Sign out</button>
+      </div>
     </div>
 
-    <div class="tab-panel" data-panel="settings" hidden>
-      <div class="settings-card">
-        <p class="hint" data-settings-hint>Verify your email on the Orders tab to see your account details here.</p>
-        <dl class="settings-fields" data-settings-fields hidden>
-          <dt>Email</dt>
-          <dd data-settings-email></dd>
-        </dl>
-      </div>
-      <p class="hint">Name, delivery address, and password are managed in your order confirmations and via WhatsApp/email support for now.</p>
+    <!-- Wishlist works without signing in — shown outside the auth gate too, until signed in. -->
+    <div class="tab-panel" data-panel="wishlist-standalone" hidden>
+      <h2>Wishlist</h2>
+      <div data-wishlist-list-standalone class="wishlist-grid"></div>
+      <p class="hint" data-wishlist-empty-standalone hidden>Your wishlist is empty — heart a product in the feed to save it here.</p>
     </div>
   </div>
 </Layout>
@@ -53,6 +79,73 @@ import Layout from '../layouts/Layout.astro';
   h1 {
     font-size: 20px;
   }
+  h2 {
+    font-size: 15px;
+    margin: 24px 0 10px;
+  }
+  .hint {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .auth-gate {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 340px;
+    margin-top: 12px;
+  }
+  .auth-heading {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0;
+  }
+  .auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .auth-form .field-row {
+    display: flex;
+    gap: 8px;
+  }
+  .auth-form input {
+    flex: 1;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    padding: 12px;
+    color: var(--fg);
+    font-size: 14px;
+    min-width: 0;
+  }
+  .auth-toggle {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 13px;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+    align-self: flex-start;
+  }
+  .auth-status {
+    font-size: 13px;
+    margin: 0;
+  }
+  .auth-status.success {
+    color: #12b76a;
+  }
+  .auth-status.error {
+    color: #d92d20;
+  }
+
+  .signed-in-as {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 12px 0 0;
+  }
+
   .account-tabs {
     display: flex;
     gap: 8px;
@@ -74,38 +167,14 @@ import Layout from '../layouts/Layout.astro';
     border-color: var(--primary);
     color: var(--primary-text);
   }
-  .hint {
-    color: var(--muted);
-    font-size: 13px;
-  }
-  .verify-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-width: 340px;
-  }
-  .verify-panel input {
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: 8px;
-    padding: 12px;
-    color: var(--fg);
-    font-size: 14px;
-  }
-  .code-row {
-    display: flex;
-    gap: 8px;
-  }
-  .code-row input {
-    flex: 1;
-  }
+
   .primary-btn {
     background: var(--primary);
     color: var(--primary-text);
     border: none;
     border-radius: 8px;
-    padding: 10px 16px;
-    font-size: 13px;
+    padding: 11px 16px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
   }
@@ -113,21 +182,11 @@ import Layout from '../layouts/Layout.astro';
     opacity: 0.6;
     cursor: not-allowed;
   }
-  .verify-status {
-    font-size: 13px;
-    margin: 0;
-  }
-  .verify-status.success {
-    color: #12b76a;
-  }
-  .verify-status.error {
-    color: #d92d20;
-  }
+
   .orders-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    margin-top: 16px;
   }
   .order-card {
     background: var(--card-bg);
@@ -152,6 +211,7 @@ import Layout from '../layouts/Layout.astro';
     color: var(--muted);
     margin: 4px 0 0;
   }
+
   .wishlist-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -199,6 +259,7 @@ import Layout from '../layouts/Layout.astro';
     cursor: pointer;
     line-height: 1;
   }
+
   .settings-card {
     background: var(--card-bg);
     border: 1px solid var(--border);
@@ -207,7 +268,7 @@ import Layout from '../layouts/Layout.astro';
     margin-bottom: 12px;
   }
   .settings-fields {
-    margin: 8px 0 0;
+    margin: 0;
     font-size: 13px;
   }
   .settings-fields dt {
@@ -217,31 +278,37 @@ import Layout from '../layouts/Layout.astro';
     margin: 0 0 8px;
     font-weight: 600;
   }
+  .logout-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+  }
 </style>
 
 <script>
-  import { fetchProductsByIds, requestEmailCode, confirmEmailCode, fetchOrdersByEmail, type OrderSummary } from '../lib/api';
+  import {
+    fetchProductsByIds,
+    loginUser,
+    signupUser,
+    logoutUser,
+    fetchCurrentUser,
+    fetchMyOrders,
+    type AuthResult,
+    type OrderSummary,
+  } from '../lib/api';
   import { withBase } from '../lib/base';
-
-  const tabs = document.querySelectorAll<HTMLElement>('.tab');
-  const panels = document.querySelectorAll<HTMLElement>('.tab-panel');
-
-  tabs.forEach((tab) => {
-    tab.addEventListener('click', () => {
-      tabs.forEach((t) => t.classList.remove('active'));
-      tab.classList.add('active');
-      panels.forEach((p) => (p.hidden = p.dataset.panel !== tab.dataset.tab));
-    });
-  });
 
   function formatZar(amount: number): string {
     return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(amount);
   }
 
-  // --- Wishlist -------------------------------------------------------
   const WISHLIST_KEY = 'tiktok-shop-wishlist';
-  const wishlistList = document.querySelector<HTMLElement>('[data-wishlist-list]');
-  const wishlistEmpty = document.querySelector<HTMLElement>('[data-wishlist-empty]');
 
   function getWishlist(): string[] {
     try {
@@ -263,30 +330,29 @@ import Layout from '../layouts/Layout.astro';
     images: { src: string }[];
   }
 
-  async function renderWishlist() {
+  async function renderWishlistInto(listEl: HTMLElement | null, emptyEl: HTMLElement | null) {
     const ids = getWishlist();
-    if (!wishlistList) return;
+    if (!listEl) return;
     if (ids.length === 0) {
-      wishlistList.innerHTML = '';
-      if (wishlistEmpty) wishlistEmpty.hidden = false;
+      listEl.innerHTML = '';
+      if (emptyEl) emptyEl.hidden = false;
       return;
     }
-    if (wishlistEmpty) wishlistEmpty.hidden = true;
-    wishlistList.innerHTML = '<p class="hint">Loading your wishlist…</p>';
+    if (emptyEl) emptyEl.hidden = true;
+    listEl.innerHTML = '<p class="hint">Loading your wishlist…</p>';
 
     try {
       const products: WooProductLite[] = await fetchProductsByIds(ids);
-      // Preserve wishlist order, drop any product that no longer exists.
       const byId = new Map(products.map((p) => [String(p.id), p]));
       const ordered = ids.map((id) => byId.get(id)).filter((p): p is WooProductLite => !!p);
 
       if (ordered.length === 0) {
-        wishlistList.innerHTML = '';
-        if (wishlistEmpty) wishlistEmpty.hidden = false;
+        listEl.innerHTML = '';
+        if (emptyEl) emptyEl.hidden = false;
         return;
       }
 
-      wishlistList.innerHTML = '';
+      listEl.innerHTML = '';
       for (const product of ordered) {
         const card = document.createElement('a');
         card.className = 'wishlist-card';
@@ -303,44 +369,40 @@ import Layout from '../layouts/Layout.astro';
           e.preventDefault();
           e.stopPropagation();
           setWishlist(getWishlist().filter((id) => id !== String(product.id)));
-          renderWishlist();
+          renderWishlistInto(listEl, emptyEl);
         });
-        wishlistList.appendChild(card);
+        listEl.appendChild(card);
       }
     } catch {
-      wishlistList.innerHTML = '<p class="hint">Unable to load your wishlist right now.</p>';
+      listEl.innerHTML = '<p class="hint">Unable to load your wishlist right now.</p>';
     }
   }
 
-  renderWishlist();
-
-  // --- Orders (email-verified lookup) ---------------------------------
-  const VERIFIED_EMAIL_KEY = 'tiktok-shop-verified-email';
-  const ordersEmailInput = document.querySelector<HTMLInputElement>('[data-orders-email]');
-  const ordersSendCodeBtn = document.querySelector<HTMLButtonElement>('[data-orders-send-code]');
-  const ordersCodeRow = document.querySelector<HTMLElement>('[data-orders-code-row]');
-  const ordersCodeInput = document.querySelector<HTMLInputElement>('[data-orders-code-input]');
-  const ordersConfirmCodeBtn = document.querySelector<HTMLButtonElement>('[data-orders-confirm-code]');
-  const ordersStatus = document.querySelector<HTMLElement>('[data-orders-status]');
-  const ordersVerifyPanel = document.querySelector<HTMLElement>('[data-orders-verify]');
-  const ordersListEl = document.querySelector<HTMLElement>('[data-orders-list]');
-  const settingsHint = document.querySelector<HTMLElement>('[data-settings-hint]');
-  const settingsFields = document.querySelector<HTMLElement>('[data-settings-fields]');
+  // --- Auth gate --------------------------------------------------------
+  const authGate = document.querySelector<HTMLElement>('[data-auth-gate]');
+  const accountBody = document.querySelector<HTMLElement>('[data-account-body]');
+  const loginForm = document.querySelector<HTMLFormElement>('[data-login-form]');
+  const signupForm = document.querySelector<HTMLFormElement>('[data-signup-form]');
+  const authToggleBtn = document.querySelector<HTMLButtonElement>('[data-auth-toggle]');
+  const authStatus = document.querySelector<HTMLElement>('[data-auth-status]');
+  const signedInAs = document.querySelector<HTMLElement>('[data-signed-in-as]');
+  const logoutBtn = document.querySelector<HTMLButtonElement>('[data-logout-btn]');
   const settingsEmail = document.querySelector<HTMLElement>('[data-settings-email]');
+  const settingsName = document.querySelector<HTMLElement>('[data-settings-name]');
+  const ordersListEl = document.querySelector<HTMLElement>('[data-orders-list]');
+  const standaloneWishlistPanel = document.querySelector<HTMLElement>('[data-panel="wishlist-standalone"]');
 
-  function setOrdersStatus(message: string, kind: 'success' | 'error' | '') {
-    if (!ordersStatus) return;
-    ordersStatus.hidden = false;
-    ordersStatus.textContent = message;
-    ordersStatus.className = `verify-status${kind ? ` ${kind}` : ''}`;
+  function setAuthStatus(message: string, kind: 'success' | 'error' | '') {
+    if (!authStatus) return;
+    authStatus.hidden = false;
+    authStatus.textContent = message;
+    authStatus.className = `auth-status${kind ? ` ${kind}` : ''}`;
   }
 
   function renderOrders(orders: OrderSummary[]) {
     if (!ordersListEl) return;
-    ordersListEl.hidden = false;
-    if (ordersVerifyPanel) ordersVerifyPanel.hidden = true;
     if (orders.length === 0) {
-      ordersListEl.innerHTML = '<p class="hint">No orders found for this email yet.</p>';
+      ordersListEl.innerHTML = '<p class="hint">No orders yet.</p>';
       return;
     }
     ordersListEl.innerHTML = orders
@@ -359,61 +421,100 @@ import Layout from '../layouts/Layout.astro';
       .join('');
   }
 
-  async function loadOrdersFor(email: string) {
+  async function showSignedIn(user: AuthResult) {
+    if (authGate) authGate.hidden = true;
+    if (accountBody) accountBody.hidden = false;
+    if (standaloneWishlistPanel) standaloneWishlistPanel.hidden = true;
+    if (signedInAs) signedInAs.textContent = `Signed in as ${user.name || user.email}`;
+    if (settingsEmail) settingsEmail.textContent = user.email;
+    if (settingsName) settingsName.textContent = user.name || '—';
+
+    if (ordersListEl) ordersListEl.innerHTML = '<p class="hint">Loading your orders…</p>';
     try {
-      const orders = await fetchOrdersByEmail(email);
-      renderOrders(orders);
-      if (settingsHint) settingsHint.hidden = true;
-      if (settingsFields) settingsFields.hidden = false;
-      if (settingsEmail) settingsEmail.textContent = email;
-      return true;
+      renderOrders(await fetchMyOrders());
     } catch {
-      return false;
+      if (ordersListEl) ordersListEl.innerHTML = '<p class="hint">Unable to load your orders right now.</p>';
     }
+
+    renderWishlistInto(
+      document.querySelector<HTMLElement>('[data-wishlist-list]'),
+      document.querySelector<HTMLElement>('[data-wishlist-empty]')
+    );
   }
 
-  // If this browser already verified an email recently, skip straight to orders.
-  const savedEmail = localStorage.getItem(VERIFIED_EMAIL_KEY);
-  if (savedEmail) {
-    loadOrdersFor(savedEmail).then((ok) => {
-      if (!ok) localStorage.removeItem(VERIFIED_EMAIL_KEY);
-    });
+  function showSignedOut() {
+    if (authGate) authGate.hidden = false;
+    if (accountBody) accountBody.hidden = true;
+    if (standaloneWishlistPanel) standaloneWishlistPanel.hidden = false;
+    renderWishlistInto(
+      document.querySelector<HTMLElement>('[data-wishlist-list-standalone]'),
+      document.querySelector<HTMLElement>('[data-wishlist-empty-standalone]')
+    );
   }
 
-  ordersSendCodeBtn?.addEventListener('click', async () => {
-    const email = ordersEmailInput?.value.trim() ?? '';
-    if (!email || !email.includes('@')) {
-      setOrdersStatus('Please enter a valid email address.', 'error');
-      return;
+  fetchCurrentUser().then((user) => {
+    if (user) showSignedIn(user);
+    else showSignedOut();
+  });
+
+  authToggleBtn?.addEventListener('click', () => {
+    const showingSignup = !signupForm?.hidden;
+    if (loginForm) loginForm.hidden = showingSignup;
+    if (signupForm) signupForm.hidden = !showingSignup;
+    if (authToggleBtn) {
+      authToggleBtn.textContent = showingSignup ? "Don't have an account? Create one" : 'Already have an account? Sign in';
     }
-    ordersSendCodeBtn.disabled = true;
+    if (authStatus) authStatus.hidden = true;
+  });
+
+  loginForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(loginForm);
+    const submit = loginForm.querySelector<HTMLButtonElement>('.primary-btn');
+    if (submit) submit.disabled = true;
     try {
-      await requestEmailCode(email);
-      if (ordersCodeRow) ordersCodeRow.hidden = false;
-      setOrdersStatus('Code sent — check your inbox.', 'success');
+      const user = await loginUser(String(formData.get('email') ?? ''), String(formData.get('password') ?? ''));
+      await showSignedIn(user);
     } catch (err) {
-      setOrdersStatus(err instanceof Error ? err.message : 'Unable to send code.', 'error');
+      setAuthStatus(err instanceof Error ? err.message : 'Sign in failed.', 'error');
     } finally {
-      ordersSendCodeBtn.disabled = false;
+      if (submit) submit.disabled = false;
     }
   });
 
-  ordersConfirmCodeBtn?.addEventListener('click', async () => {
-    const email = ordersEmailInput?.value.trim() ?? '';
-    const code = ordersCodeInput?.value.trim() ?? '';
-    if (!code) {
-      setOrdersStatus('Enter the 6-digit code from your email.', 'error');
-      return;
-    }
-    ordersConfirmCodeBtn.disabled = true;
+  signupForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(signupForm);
+    const submit = signupForm.querySelector<HTMLButtonElement>('.primary-btn');
+    if (submit) submit.disabled = true;
     try {
-      await confirmEmailCode(email, code);
-      localStorage.setItem(VERIFIED_EMAIL_KEY, email.toLowerCase());
-      await loadOrdersFor(email);
+      const user = await signupUser({
+        email: String(formData.get('email') ?? ''),
+        password: String(formData.get('password') ?? ''),
+        firstName: String(formData.get('firstName') ?? ''),
+        lastName: String(formData.get('lastName') ?? ''),
+      });
+      await showSignedIn(user);
     } catch (err) {
-      setOrdersStatus(err instanceof Error ? err.message : 'Incorrect or expired code.', 'error');
+      setAuthStatus(err instanceof Error ? err.message : 'Sign up failed.', 'error');
     } finally {
-      ordersConfirmCodeBtn.disabled = false;
+      if (submit) submit.disabled = false;
     }
+  });
+
+  logoutBtn?.addEventListener('click', async () => {
+    await logoutUser();
+    showSignedOut();
+  });
+
+  // --- Tabs --------------------------------------------------------------
+  const tabs = document.querySelectorAll<HTMLElement>('.account-tabs .tab');
+  const panels = document.querySelectorAll<HTMLElement>('[data-account-body] .tab-panel');
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      tabs.forEach((t) => t.classList.remove('active'));
+      tab.classList.add('active');
+      panels.forEach((p) => (p.hidden = p.dataset.panel !== tab.dataset.tab));
+    });
   });
 </script>
