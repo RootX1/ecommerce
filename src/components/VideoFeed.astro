@@ -43,7 +43,7 @@ const feedData = products.map((p) => ({
 </style>
 
 <script>
-  import { submitReview, loginUser, signupUser, logoutUser, fetchCurrentUser, type AuthResult } from '../lib/api';
+  import { submitReview, fetchCurrentUser, type AuthResult } from '../lib/api';
   import { withBase } from '../lib/base';
 
   interface FeedProduct {
@@ -181,102 +181,25 @@ const feedData = products.map((p) => ({
   const reviewForm = document.querySelector<HTMLFormElement>('[data-review-form]');
   const reviewError = document.querySelector<HTMLElement>('[data-review-error]');
   const ratingInput = document.querySelector<HTMLInputElement>('[data-rating-value]');
+  const submitBtn = document.querySelector<HTMLButtonElement>('[data-submit-btn]');
   const stars = Array.from(document.querySelectorAll<HTMLElement>('.star'));
   let activeProductId: string | null = null;
 
-  // --- Sign in / create account gate (reviews require a real account) ----
-  const authBlock = document.querySelector<HTMLElement>('[data-auth-block]');
-  const loginForm = document.querySelector<HTMLFormElement>('[data-login-form]');
-  const signupForm = document.querySelector<HTMLFormElement>('[data-signup-form]');
-  const authToggleBtn = document.querySelector<HTMLButtonElement>('[data-auth-toggle]');
-  const authStatus = document.querySelector<HTMLElement>('[data-auth-status]');
+  // --- Sign-in gate (reviews require a real account; all sign in/up/out UI
+  // and logic lives on the Profile page, src/pages/account.astro — this
+  // sheet only checks whether a session exists and links there if not) ----
+  const signinPrompt = document.querySelector<HTMLElement>('[data-signin-prompt]');
   const signedInAs = document.querySelector<HTMLElement>('[data-signed-in-as]');
-  const reviewTextarea = document.querySelector<HTMLTextAreaElement>('[data-review-text]');
-  const submitBtn = document.querySelector<HTMLButtonElement>('[data-submit-btn]');
   let currentUser: AuthResult | null = null;
-
-  function setAuthStatus(message: string, kind: 'success' | 'error' | '') {
-    if (!authStatus) return;
-    authStatus.hidden = false;
-    authStatus.textContent = message;
-    authStatus.className = `auth-status${kind ? ` ${kind}` : ''}`;
-  }
 
   function renderAuthState() {
     const signedIn = !!currentUser;
-    if (authBlock) authBlock.hidden = signedIn;
-    stars.forEach((s) => ((s as HTMLButtonElement).disabled = !signedIn));
-    if (reviewTextarea) reviewTextarea.disabled = !signedIn;
-    if (submitBtn) submitBtn.disabled = !signedIn;
-    if (signedInAs) {
-      signedInAs.hidden = !signedIn;
-      if (signedIn && currentUser) {
-        signedInAs.innerHTML = '';
-        signedInAs.append(`Reviewing as ${currentUser.name || currentUser.email} · `);
-        const signOutLink = document.createElement('button');
-        signOutLink.type = 'button';
-        signOutLink.className = 'sign-out-link';
-        signOutLink.textContent = 'Sign out';
-        signOutLink.addEventListener('click', async () => {
-          await logoutUser();
-          currentUser = null;
-          renderAuthState();
-        });
-        signedInAs.appendChild(signOutLink);
-      }
+    if (signinPrompt) signinPrompt.hidden = signedIn;
+    if (reviewForm) reviewForm.hidden = !signedIn;
+    if (signedInAs && signedIn && currentUser) {
+      signedInAs.textContent = `Reviewing as ${currentUser.name || currentUser.email}`;
     }
   }
-
-  authToggleBtn?.addEventListener('click', () => {
-    const showingSignup = !signupForm?.hidden;
-    if (loginForm) loginForm.hidden = showingSignup;
-    if (signupForm) signupForm.hidden = !showingSignup;
-    if (authToggleBtn) {
-      authToggleBtn.textContent = showingSignup ? "Don't have an account? Create one" : 'Already have an account? Sign in';
-    }
-    if (authStatus) authStatus.hidden = true;
-  });
-
-  loginForm?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(loginForm);
-    const submit = loginForm.querySelector<HTMLButtonElement>('.auth-submit-btn');
-    if (submit) submit.disabled = true;
-    try {
-      currentUser = await loginUser(String(formData.get('email') ?? ''), String(formData.get('password') ?? ''));
-      renderAuthState();
-      setAuthStatus(`✓ Signed in as ${currentUser.email}`, 'success');
-      // The Turnstile token issued when the sheet first opened may be
-      // stale by now — refresh it so it's fresh for the upcoming submit.
-      resetTurnstile();
-    } catch (err) {
-      setAuthStatus(err instanceof Error ? err.message : 'Sign in failed.', 'error');
-    } finally {
-      if (submit) submit.disabled = false;
-    }
-  });
-
-  signupForm?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(signupForm);
-    const submit = signupForm.querySelector<HTMLButtonElement>('.auth-submit-btn');
-    if (submit) submit.disabled = true;
-    try {
-      currentUser = await signupUser({
-        email: String(formData.get('email') ?? ''),
-        password: String(formData.get('password') ?? ''),
-        firstName: String(formData.get('firstName') ?? ''),
-        lastName: String(formData.get('lastName') ?? ''),
-      });
-      renderAuthState();
-      setAuthStatus(`✓ Account created — signed in as ${currentUser.email}`, 'success');
-      resetTurnstile();
-    } catch (err) {
-      setAuthStatus(err instanceof Error ? err.message : 'Sign up failed.', 'error');
-    } finally {
-      if (submit) submit.disabled = false;
-    }
-  });
 
   function renderStars(container: HTMLElement, rating: number) {
     container.textContent = '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating));
@@ -340,7 +263,6 @@ const feedData = products.map((p) => ({
     stars.forEach((s) => s.classList.remove('selected'));
     if (ratingInput) ratingInput.value = '0';
     if (reviewError) reviewError.hidden = true;
-    if (authStatus) authStatus.hidden = true;
     resetTurnstile();
   }
 

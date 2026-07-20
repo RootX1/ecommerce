@@ -30,7 +30,10 @@ import Layout from '../layouts/Layout.astro';
     </div>
 
     <div data-account-body hidden>
-      <p class="signed-in-as" data-signed-in-as></p>
+      <div class="signed-in-row">
+        <p class="signed-in-as" data-signed-in-as></p>
+        <button type="button" class="logout-btn" data-logout-btn>Sign out</button>
+      </div>
 
       <div class="account-tabs">
         <button class="tab active" data-tab="orders">Orders</button>
@@ -57,7 +60,6 @@ import Layout from '../layouts/Layout.astro';
           </dl>
         </div>
         <p class="hint">Delivery address and password are managed via your order confirmations and WhatsApp/email support for now.</p>
-        <button type="button" class="logout-btn" data-logout-btn>Sign out</button>
       </div>
     </div>
 
@@ -140,10 +142,18 @@ import Layout from '../layouts/Layout.astro';
     color: #d92d20;
   }
 
+  .signed-in-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
   .signed-in-as {
     font-size: 13px;
     color: var(--muted);
-    margin: 12px 0 0;
+    margin: 0;
   }
 
   .account-tabs {

@@ -2,6 +2,10 @@
 // Single shared bottom-sheet instance, reused for whichever product is
 // currently active in the feed. Content is populated client-side by
 // VideoFeed.astro's script so this stays one DOM node instead of one per video.
+// Signing in/up/out is handled entirely on the Profile page (src/pages/account.astro)
+// — this sheet only checks whether a session already exists and, if not,
+// points the visitor there instead of duplicating the auth forms.
+import { withBase } from '../lib/base';
 const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 ---
 
@@ -19,35 +23,17 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
       <p class="empty-state" data-review-empty hidden>No reviews yet — be the first!</p>
     </div>
 
-    <div class="auth-block" data-auth-block>
-      <p class="auth-heading">Sign in to write a review</p>
-
-      <form class="auth-form" data-login-form>
-        <input type="email" name="email" placeholder="Email" required maxlength="120" data-login-email />
-        <input type="password" name="password" placeholder="Password" required maxlength="200" data-login-password />
-        <button type="submit" class="auth-submit-btn">Sign in</button>
-      </form>
-
-      <form class="auth-form" data-signup-form hidden>
-        <div class="field-row">
-          <input type="text" name="firstName" placeholder="First name" required maxlength="60" />
-          <input type="text" name="lastName" placeholder="Last name" required maxlength="60" />
-        </div>
-        <input type="email" name="email" placeholder="Email" required maxlength="120" />
-        <input type="password" name="password" placeholder="Password (min 8 characters)" required minlength="8" maxlength="200" />
-        <button type="submit" class="auth-submit-btn">Create account</button>
-      </form>
-
-      <button type="button" class="auth-toggle" data-auth-toggle>Don't have an account? Create one</button>
-      <p class="auth-status" data-auth-status hidden></p>
+    <div class="signin-prompt" data-signin-prompt>
+      <p class="signin-prompt-text">You must be signed in to write a review.</p>
+      <a class="signin-prompt-btn" href={withBase('/account')}>Sign in / Create account</a>
     </div>
 
-    <form class="review-form" data-review-form>
-      <p class="signed-in-as" data-signed-in-as hidden></p>
+    <form class="review-form" data-review-form hidden>
+      <p class="signed-in-as" data-signed-in-as></p>
 
       <div class="star-input" data-star-input role="radiogroup" aria-label="Rating">
         {[1, 2, 3, 4, 5].map((n) => (
-          <button type="button" class="star" data-star-value={n} aria-label={`${n} star`} disabled>★</button>
+          <button type="button" class="star" data-star-value={n} aria-label={`${n} star`}>★</button>
         ))}
         <input type="hidden" name="rating" data-rating-value value="0" />
       </div>
@@ -58,7 +44,6 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
         required
         maxlength="2000"
         rows="3"
-        disabled
         data-review-text
       ></textarea>
 
@@ -70,7 +55,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 
       {turnstileSiteKey && <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-appearance="interaction-only" />}
 
-      <button type="submit" class="submit-btn" disabled data-submit-btn>Post review</button>
+      <button type="submit" class="submit-btn" data-submit-btn>Post review</button>
       <p class="form-error" data-review-error hidden></p>
     </form>
   </div>
@@ -185,96 +170,36 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     padding: 20px 0;
   }
 
-  .auth-block {
+  .signin-prompt {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    align-items: flex-start;
+    gap: 10px;
     border-top: 1px solid var(--border);
     padding-top: 12px;
   }
 
-  .auth-heading {
+  .signin-prompt-text {
     font-size: 13px;
-    font-weight: 700;
+    color: var(--muted);
     margin: 0;
   }
 
-  .auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .auth-form .field-row {
-    display: flex;
-    gap: 8px;
-  }
-
-  .auth-form input {
-    flex: 1;
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: 8px;
-    padding: 10px;
-    color: var(--fg);
-    font-size: 14px;
-    min-width: 0;
-  }
-
-  .auth-submit-btn {
+  .signin-prompt-btn {
+    display: inline-block;
     background: var(--primary);
     color: var(--primary-text);
-    border: none;
+    text-decoration: none;
     border-radius: 8px;
-    padding: 11px;
+    padding: 11px 18px;
     font-weight: 600;
     font-size: 14px;
-    cursor: pointer;
-  }
-
-  .auth-submit-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .auth-toggle {
-    background: none;
-    border: none;
-    color: var(--primary);
-    font-size: 12px;
-    text-decoration: underline;
-    cursor: pointer;
-    padding: 0;
-    align-self: flex-start;
-  }
-
-  .auth-status {
-    font-size: 12px;
-    margin: 0;
-  }
-
-  .auth-status.success {
-    color: #12b76a;
-  }
-
-  .auth-status.error {
-    color: #d92d20;
   }
 
   .signed-in-as {
     font-size: 12px;
     color: var(--muted);
     margin: 0;
-  }
-
-  .signed-in-as .sign-out-link {
-    color: var(--primary);
-    text-decoration: underline;
-    cursor: pointer;
-    background: none;
-    border: none;
-    font-size: 12px;
-    padding: 0;
   }
 
   .review-form {
