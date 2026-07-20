@@ -20,9 +20,11 @@ const { product } = Astro.props;
     <span class="count">{product.reviewCount}</span>
   </button>
 
-  <a class="action-btn" href={withBase(`/product/${product.slug}`)} aria-label="View product page">
-    <span class="icon bag" aria-hidden="true"></span>
-    <span class="count">Buy</span>
+  <a class="action-btn buy-btn" href={withBase(`/product/${product.slug}`)} aria-label="Buy this product now">
+    <span class="icon-badge">
+      <span class="icon bag" aria-hidden="true"></span>
+    </span>
+    <span class="count buy-label">Buy</span>
   </a>
 
   <button class="action-btn" data-action="share" data-product-id={product.id} aria-label="Share this product">
@@ -74,6 +76,34 @@ const { product } = Astro.props;
 
   .wishlist-btn[aria-pressed='true'] .icon {
     background: var(--secondary);
+  }
+
+  /* The buy action is the money-making click on this screen — give it a
+     bright, high-contrast badge and extra size so it visually reads as
+     "tap here to buy" at a glance, distinct from the neutral white
+     wishlist/reviews/share icons around it. */
+  .icon-badge {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  }
+
+  .buy-btn .icon.bag {
+    width: 30px;
+    height: 30px;
+    background: var(--secondary-text);
+    filter: none;
+  }
+
+  .buy-label {
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
   }
 
   .icon.heart {

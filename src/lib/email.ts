@@ -20,6 +20,8 @@ export interface SendEmailInput {
   replyTo?: string;
   subject: string;
   text: string;
+  /** Optional HTML body; most mail clients prefer this over `text` when both are present. */
+  html?: string;
 }
 
 export async function sendEmail(env: SmtpEnv, input: SendEmailInput): Promise<boolean> {
@@ -53,6 +55,7 @@ export async function sendEmail(env: SmtpEnv, input: SendEmailInput): Promise<bo
         ...(input.replyTo ? { reply: input.replyTo } : {}),
         subject: input.subject,
         text: input.text,
+        ...(input.html ? { html: input.html } : {}),
       }
     );
     return true;

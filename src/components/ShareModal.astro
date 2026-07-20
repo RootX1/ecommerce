@@ -99,17 +99,42 @@
     height: 44px;
     border-radius: 50%;
     display: block;
+    position: relative;
+  }
+  .share-icon::after {
+    content: '';
+    position: absolute;
+    inset: 11px;
+    background: #fff;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
   }
   .share-icon.whatsapp {
     background: #25d366;
   }
+  .share-icon.whatsapp::after {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a10 10 0 00-8.6 15.1L2 22l5.06-1.33A10 10 0 1012 2zm5.6 14.3c-.24.66-1.4 1.26-1.93 1.32-.5.06-1.11.09-1.8-.11a11.1 11.1 0 01-4.06-2.16 11.6 11.6 0 01-2.6-3.6c-.4-.7-.1-1.09.24-1.44.28-.28.62-.46.83-.46.2 0 .35 0 .5.01.16.01.38-.06.6.46.24.58.8 2 .87 2.14.07.15.11.31.02.5-.08.19-.13.3-.26.46-.13.16-.27.35-.39.47-.13.13-.26.28-.11.55.15.27.68 1.13 1.47 1.83.99.87 1.83 1.15 2.1 1.28.27.13.43.11.6-.06.16-.18.68-.79.87-1.06.18-.27.36-.22.6-.13.24.09 1.53.72 1.8.85.26.13.44.2.5.31.06.14.06.78-.18 1.44z'/%3E%3C/svg%3E");
+  }
   .share-icon.messenger {
     background: #006aff;
+  }
+  .share-icon.messenger::after {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C6.48 2 2 6.14 2 11.25c0 2.9 1.44 5.49 3.7 7.19V22l3.38-1.86c.9.25 1.87.38 2.92.38 5.52 0 10-4.14 10-9.27C22 6.14 17.52 2 12 2zm1.02 12.5l-2.55-2.72-4.98 2.72 5.48-5.82 2.61 2.72 4.9-2.72z'/%3E%3C/svg%3E");
   }
   .share-icon.email {
     background: #6b7280;
   }
+  .share-icon.email::after {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 5h18v14H3zm2 2.2V17h14V7.2l-7 5.3z'/%3E%3C/svg%3E");
+  }
   .share-icon.link {
     background: #444;
+  }
+  .share-icon.link::after {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3.9 12a4.1 4.1 0 014.1-4.1h4V9.5H8a2.5 2.5 0 000 5h4V16H8a4.1 4.1 0 01-4.1-4zm7-1h4.2v2H10.9zM16 7.9h-4V9.5h4a2.5 2.5 0 010 5h-4V16h4a4.1 4.1 0 000-8.1z'/%3E%3C/svg%3E");
   }
 </style>

@@ -11,6 +11,7 @@ import type { APIRoute } from 'astro';
 import { createOrder, getBacsGateway, getDefaultShippingCost, type BacsAccountDetail } from '../../lib/woocommerce';
 import { sanitizeText, checkRateLimit, clientIp } from '../../lib/security';
 import { sendEmail } from '../../lib/email';
+import { renderOrderConfirmationEmail } from '../../lib/emailTemplates';
 
 export const prerender = false;
 
@@ -163,6 +164,21 @@ export const POST: APIRoute = async ({ request, locals }) => {
       ]
         .filter((line) => line !== '')
         .join('\n'),
+      html: renderOrderConfirmationEmail({
+        orderId,
+        firstName,
+        lastName,
+        address1,
+        city,
+        postcode,
+        items: payload.items.map((item) => ({ name: item.name, quantity: item.quantity, unitPrice: item.unitPrice })),
+        itemsTotal,
+        shippingCost: shipping.cost,
+        shippingTitle: shipping.methodTitle,
+        total: grandTotal,
+        instructions,
+        accountDetails,
+      }),
     });
   } catch {
     // Order is already created — a failed confirmation email shouldn't fail checkout.

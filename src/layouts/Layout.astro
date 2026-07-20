@@ -38,7 +38,8 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
         <slot />
       </main>
       <a href={withBase('/cart')} class="cart-pill" data-cart-pill aria-label="View cart">
-        🛒 <span data-cart-count>0</span>
+        <span class="cart-icon" aria-hidden="true">🛒</span>
+        <span class="cart-count" data-cart-count hidden>0</span>
       </a>
       <BottomNav />
     </div>
@@ -47,8 +48,11 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
       import { getCart, cartCount } from '../lib/cart';
 
       function updateCartPill() {
-        const countEl = document.querySelector('[data-cart-count]');
-        if (countEl) countEl.textContent = String(cartCount(getCart()));
+        const countEl = document.querySelector<HTMLElement>('[data-cart-count]');
+        if (!countEl) return;
+        const count = cartCount(getCart());
+        countEl.textContent = String(count);
+        countEl.hidden = count === 0;
       }
       window.addEventListener('cart:updated', updateCartPill);
       updateCartPill();
@@ -78,17 +82,38 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   }
   .cart-pill {
     position: fixed;
-    top: calc(12px + env(safe-area-inset-top, 0px));
-    right: 12px;
+    top: calc(14px + env(safe-area-inset-top, 0px));
+    right: 14px;
     z-index: 30;
-    background: rgba(0, 0, 0, 0.6);
-    color: #fff;
+    background: #fff;
     text-decoration: none;
-    padding: 6px 10px;
-    border-radius: 20px;
-    font-size: 13px;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
-    gap: 4px;
+    justify-content: center;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+  }
+  .cart-icon {
+    font-size: 22px;
+    line-height: 1;
+  }
+  .cart-count {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 4px;
+    border-radius: 10px;
+    background: var(--secondary);
+    color: var(--secondary-text);
+    font-size: 12px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   }
 </style>

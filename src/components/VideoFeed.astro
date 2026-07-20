@@ -250,6 +250,10 @@ const feedData = products.map((p) => ({
       verifiedEmail = email.toLowerCase();
       setReviewFormLocked(true);
       setVerifyStatus('✓ Email verified — you can now write your review.', 'success');
+      // The Turnstile token issued when the sheet first opened is likely
+      // stale by now (the user just spent time fetching a code from their
+      // inbox) — refresh it so the token is fresh for the upcoming submit.
+      resetTurnstile();
     } catch (err) {
       setVerifyStatus(err instanceof Error ? err.message : 'Incorrect or expired code.', 'error');
     } finally {
