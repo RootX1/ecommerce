@@ -1,10 +1,14 @@
 ---
 import Layout from '../layouts/Layout.astro';
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 ---
 
 <Layout title="My Account">
   <div class="account-page">
-    <h1>My Account</h1>
+    <div class="page-header">
+      <h1>My Account</h1>
+      <button type="button" class="logout-btn" data-logout-btn hidden>Sign out</button>
+    </div>
 
     <div class="auth-gate" data-auth-gate>
       <p class="auth-heading" data-auth-heading>Sign in to your account</p>
@@ -12,29 +16,33 @@ import Layout from '../layouts/Layout.astro';
       <form class="auth-form" data-login-form>
         <input type="email" name="email" placeholder="Email" required maxlength="120" />
         <input type="password" name="password" placeholder="Password" required maxlength="200" />
+        {turnstileSiteKey && <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-appearance="interaction-only" />}
         <button type="submit" class="primary-btn">Sign in</button>
       </form>
+
+      <button type="button" class="auth-toggle" data-auth-toggle>Don't have an account? Create one</button>
 
       <form class="auth-form" data-signup-form hidden>
         <div class="field-row">
           <input type="text" name="firstName" placeholder="First name" required maxlength="60" />
           <input type="text" name="lastName" placeholder="Last name" required maxlength="60" />
         </div>
-        <input type="email" name="email" placeholder="Email" required maxlength="120" />
+        <input type="email" name="email" placeholder="Email" required maxlength="120" data-signup-email />
         <input type="password" name="password" placeholder="Password (min 8 characters)" required minlength="8" maxlength="200" />
-        <button type="submit" class="primary-btn">Create account</button>
+        {turnstileSiteKey && <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-appearance="interaction-only" />}
+        <button type="submit" class="primary-btn" data-signup-submit>Send verification code</button>
+
+        <div class="otp-row" data-otp-row hidden>
+          <p class="otp-hint">We've emailed a 6-digit code to <strong data-otp-email></strong> — enter it below to finish creating your account.</p>
+          <input type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" data-otp-code />
+          <button type="button" class="primary-btn" data-otp-verify>Verify &amp; create account</button>
+        </div>
       </form>
 
-      <button type="button" class="auth-toggle" data-auth-toggle>Don't have an account? Create one</button>
       <p class="auth-status" data-auth-status hidden></p>
     </div>
 
     <div data-account-body hidden>
-      <div class="signed-in-row">
-        <p class="signed-in-as" data-signed-in-as></p>
-        <button type="button" class="logout-btn" data-logout-btn>Sign out</button>
-      </div>
-
       <div class="account-tabs">
         <button class="tab active" data-tab="orders">Orders</button>
         <button class="tab" data-tab="wishlist">Wishlist</button>
@@ -78,8 +86,15 @@ import Layout from '../layouts/Layout.astro';
     overflow-y: auto;
     height: 100%;
   }
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
   h1 {
     font-size: 20px;
+    margin: 0;
   }
   h2 {
     font-size: 15px;
@@ -93,7 +108,7 @@ import Layout from '../layouts/Layout.astro';
   .auth-gate {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     max-width: 340px;
     margin-top: 12px;
   }
@@ -121,6 +136,25 @@ import Layout from '../layouts/Layout.astro';
     font-size: 14px;
     min-width: 0;
   }
+  .cf-turnstile {
+    display: flex;
+    justify-content: center;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .otp-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+  }
+  .otp-hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0;
+  }
   .auth-toggle {
     background: none;
     border: none;
@@ -140,20 +174,6 @@ import Layout from '../layouts/Layout.astro';
   }
   .auth-status.error {
     color: #d92d20;
-  }
-
-  .signed-in-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-top: 12px;
-  }
-
-  .signed-in-as {
-    font-size: 13px;
-    color: var(--muted);
-    margin: 0;
   }
 
   .account-tabs {
@@ -293,11 +313,11 @@ import Layout from '../layouts/Layout.astro';
     border: 1px solid var(--border);
     color: var(--fg);
     border-radius: 8px;
-    padding: 10px 16px;
+    padding: 8px 14px;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    margin-top: 8px;
+    flex-shrink: 0;
   }
 </style>
 
@@ -305,7 +325,8 @@ import Layout from '../layouts/Layout.astro';
   import {
     fetchProductsByIds,
     loginUser,
-    signupUser,
+    requestSignupCode,
+    verifySignupCode,
     logoutUser,
     fetchCurrentUser,
     fetchMyOrders,
@@ -316,6 +337,10 @@ import Layout from '../layouts/Layout.astro';
 
   function formatZar(amount: number): string {
     return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(amount);
+  }
+
+  function resetTurnstile() {
+    (window as unknown as { turnstile?: { reset: () => void } }).turnstile?.reset();
   }
 
   const WISHLIST_KEY = 'tiktok-shop-wishlist';
@@ -390,12 +415,17 @@ import Layout from '../layouts/Layout.astro';
 
   // --- Auth gate --------------------------------------------------------
   const authGate = document.querySelector<HTMLElement>('[data-auth-gate]');
+  const authHeading = document.querySelector<HTMLElement>('[data-auth-heading]');
   const accountBody = document.querySelector<HTMLElement>('[data-account-body]');
   const loginForm = document.querySelector<HTMLFormElement>('[data-login-form]');
   const signupForm = document.querySelector<HTMLFormElement>('[data-signup-form]');
+  const signupSubmitBtn = document.querySelector<HTMLButtonElement>('[data-signup-submit]');
+  const otpRow = document.querySelector<HTMLElement>('[data-otp-row]');
+  const otpEmailEl = document.querySelector<HTMLElement>('[data-otp-email]');
+  const otpCodeInput = document.querySelector<HTMLInputElement>('[data-otp-code]');
+  const otpVerifyBtn = document.querySelector<HTMLButtonElement>('[data-otp-verify]');
   const authToggleBtn = document.querySelector<HTMLButtonElement>('[data-auth-toggle]');
   const authStatus = document.querySelector<HTMLElement>('[data-auth-status]');
-  const signedInAs = document.querySelector<HTMLElement>('[data-signed-in-as]');
   const logoutBtn = document.querySelector<HTMLButtonElement>('[data-logout-btn]');
   const settingsEmail = document.querySelector<HTMLElement>('[data-settings-email]');
   const settingsName = document.querySelector<HTMLElement>('[data-settings-name]');
@@ -434,8 +464,8 @@ import Layout from '../layouts/Layout.astro';
   async function showSignedIn(user: AuthResult) {
     if (authGate) authGate.hidden = true;
     if (accountBody) accountBody.hidden = false;
+    if (logoutBtn) logoutBtn.hidden = false;
     if (standaloneWishlistPanel) standaloneWishlistPanel.hidden = true;
-    if (signedInAs) signedInAs.textContent = `Signed in as ${user.name || user.email}`;
     if (settingsEmail) settingsEmail.textContent = user.email;
     if (settingsName) settingsName.textContent = user.name || '—';
 
@@ -455,6 +485,7 @@ import Layout from '../layouts/Layout.astro';
   function showSignedOut() {
     if (authGate) authGate.hidden = false;
     if (accountBody) accountBody.hidden = true;
+    if (logoutBtn) logoutBtn.hidden = true;
     if (standaloneWishlistPanel) standaloneWishlistPanel.hidden = false;
     renderWishlistInto(
       document.querySelector<HTMLElement>('[data-wishlist-list-standalone]'),
@@ -471,10 +502,14 @@ import Layout from '../layouts/Layout.astro';
     const showingSignup = !signupForm?.hidden;
     if (loginForm) loginForm.hidden = showingSignup;
     if (signupForm) signupForm.hidden = !showingSignup;
+    if (authHeading) authHeading.textContent = showingSignup ? 'Create your account' : 'Sign in to your account';
     if (authToggleBtn) {
-      authToggleBtn.textContent = showingSignup ? "Don't have an account? Create one" : 'Already have an account? Sign in';
+      authToggleBtn.textContent = showingSignup ? 'Already have an account? Sign in' : "Don't have an account? Create one";
     }
     if (authStatus) authStatus.hidden = true;
+    // Reset the OTP step too, in case they'd started signing up before switching.
+    if (otpRow) otpRow.hidden = true;
+    if (signupSubmitBtn) signupSubmitBtn.hidden = false;
   });
 
   loginForm?.addEventListener('submit', async (e) => {
@@ -483,32 +518,63 @@ import Layout from '../layouts/Layout.astro';
     const submit = loginForm.querySelector<HTMLButtonElement>('.primary-btn');
     if (submit) submit.disabled = true;
     try {
-      const user = await loginUser(String(formData.get('email') ?? ''), String(formData.get('password') ?? ''));
+      const user = await loginUser(
+        String(formData.get('email') ?? ''),
+        String(formData.get('password') ?? ''),
+        String(formData.get('cf-turnstile-response') ?? '')
+      );
       await showSignedIn(user);
     } catch (err) {
       setAuthStatus(err instanceof Error ? err.message : 'Sign in failed.', 'error');
+      resetTurnstile();
     } finally {
       if (submit) submit.disabled = false;
     }
   });
 
+  // Step 1: send the verification code.
   signupForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(signupForm);
-    const submit = signupForm.querySelector<HTMLButtonElement>('.primary-btn');
-    if (submit) submit.disabled = true;
+    const email = String(formData.get('email') ?? '');
+    if (signupSubmitBtn) signupSubmitBtn.disabled = true;
     try {
-      const user = await signupUser({
+      await requestSignupCode(email, String(formData.get('cf-turnstile-response') ?? ''));
+      if (otpRow) otpRow.hidden = false;
+      if (otpEmailEl) otpEmailEl.textContent = email;
+      if (signupSubmitBtn) signupSubmitBtn.hidden = true;
+      setAuthStatus('Code sent — check your inbox.', 'success');
+    } catch (err) {
+      setAuthStatus(err instanceof Error ? err.message : 'Unable to send code.', 'error');
+      resetTurnstile();
+    } finally {
+      if (signupSubmitBtn) signupSubmitBtn.disabled = false;
+    }
+  });
+
+  // Step 2: confirm the code and actually create the account.
+  otpVerifyBtn?.addEventListener('click', async () => {
+    if (!signupForm) return;
+    const formData = new FormData(signupForm);
+    const code = otpCodeInput?.value.trim() ?? '';
+    if (!code) {
+      setAuthStatus('Enter the 6-digit code from your email.', 'error');
+      return;
+    }
+    otpVerifyBtn.disabled = true;
+    try {
+      const user = await verifySignupCode({
         email: String(formData.get('email') ?? ''),
+        code,
         password: String(formData.get('password') ?? ''),
         firstName: String(formData.get('firstName') ?? ''),
         lastName: String(formData.get('lastName') ?? ''),
       });
       await showSignedIn(user);
     } catch (err) {
-      setAuthStatus(err instanceof Error ? err.message : 'Sign up failed.', 'error');
+      setAuthStatus(err instanceof Error ? err.message : 'Incorrect or expired code.', 'error');
     } finally {
-      if (submit) submit.disabled = false;
+      otpVerifyBtn.disabled = false;
     }
   });
 

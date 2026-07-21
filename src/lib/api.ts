@@ -45,11 +45,11 @@ export interface AuthResult {
 }
 
 /** Signs in with a real WooCommerce account (email + password). */
-export async function loginUser(email: string, password: string): Promise<AuthResult> {
+export async function loginUser(email: string, password: string, turnstileToken: string): Promise<AuthResult> {
   const res = await fetch(withBase('/api/auth/login'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, turnstileToken }),
   });
   if (!res.ok) {
     const err: { error?: string } = await res.json().catch(() => ({ error: 'Sign in failed' }));
@@ -58,16 +58,30 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
   return res.json();
 }
 
+/** Step 1 of signup: sends a one-time code to the email address. */
+export async function requestSignupCode(email: string, turnstileToken: string): Promise<void> {
+  const res = await fetch(withBase('/api/auth/signup-otp/request'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, turnstileToken }),
+  });
+  if (!res.ok) {
+    const err: { error?: string } = await res.json().catch(() => ({ error: 'Unable to send code' }));
+    throw new Error(err.error ?? 'Unable to send code');
+  }
+}
+
 export interface SignupInput {
   email: string;
+  code: string;
   password: string;
   firstName: string;
   lastName: string;
 }
 
-/** Creates a new WooCommerce account and signs in immediately. */
-export async function signupUser(input: SignupInput): Promise<AuthResult> {
-  const res = await fetch(withBase('/api/auth/signup'), {
+/** Step 2 of signup: confirms the code, creates the account, and signs in. */
+export async function verifySignupCode(input: SignupInput): Promise<AuthResult> {
+  const res = await fetch(withBase('/api/auth/signup-otp/verify'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),

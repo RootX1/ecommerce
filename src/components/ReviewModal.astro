@@ -31,11 +31,14 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     <form class="review-form" data-review-form hidden>
       <p class="signed-in-as" data-signed-in-as></p>
 
-      <div class="star-input" data-star-input role="radiogroup" aria-label="Rating">
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button type="button" class="star" data-star-value={n} aria-label={`${n} star`}>★</button>
-        ))}
-        <input type="hidden" name="rating" data-rating-value value="0" />
+      <div class="star-row">
+        <div class="star-input" data-star-input role="radiogroup" aria-label="Rating">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button type="button" class="star" data-star-value={n} aria-label={`${n} star`}>★</button>
+          ))}
+          <input type="hidden" name="rating" data-rating-value value="0" />
+        </div>
+        <p class="star-hint">Tap a star to choose your rating</p>
       </div>
 
       <textarea
@@ -209,15 +212,22 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     padding-top: 12px;
   }
 
+  .star-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
   .star-input {
     display: flex;
-    gap: 4px;
+    gap: 6px;
   }
 
   .star {
     background: none;
     border: none;
-    font-size: 22px;
+    font-size: 34px;
+    line-height: 1;
     color: var(--border);
     cursor: pointer;
     padding: 0;
@@ -230,6 +240,12 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   .star:disabled {
     cursor: not-allowed;
     opacity: 0.5;
+  }
+
+  .star-hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0;
   }
 
   .cf-turnstile {

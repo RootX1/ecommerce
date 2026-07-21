@@ -69,12 +69,26 @@ put`, never `wrangler.jsonc`) — none of these ever reach the browser.
 ## Accounts: real WooCommerce login, session-cookie authorization
 
 - Reviews and order lookups require a real WooCommerce account, not just an
-  email address. Sign-in (`POST /api/auth/login`, `src/lib/wpAuth.ts`) checks
-  the password against WordPress's own user table via the "JWT Authentication
-  for WP REST API" plugin's `/wp-json/jwt-auth/v1/token` endpoint — we never
-  store or reuse the JWT itself, it's only used once to confirm the password
-  is correct. Sign-up (`POST /api/auth/signup`) creates a real WooCommerce
-  customer via the admin REST API (`createCustomer` in `src/lib/woocommerce.ts`).
+  email address. All sign-in/sign-up/sign-out UI lives on the Profile page
+  (`src/pages/account.astro`) only — other surfaces like the review sheet
+  just check session state and link there, rather than duplicating auth
+  forms in multiple places.
+- Sign-in (`POST /api/auth/login`, `src/lib/wpAuth.ts`) checks the password
+  against WordPress's own user table via the "JWT Authentication for WP
+  REST API" plugin's `/wp-json/jwt-auth/v1/token` endpoint — we never store
+  or reuse the JWT itself, it's only used once to confirm the password is
+  correct.
+- Sign-up is two-step and requires a second factor: `POST
+  /api/auth/signup-otp/request` emails a 6-digit one-time code
+  (`src/lib/signupOtp.ts`) before anything is created; only
+  `POST /api/auth/signup-otp/verify`, given the correct code, actually
+  creates the WooCommerce customer (`createCustomer` in
+  `src/lib/woocommerce.ts`) and signs them in. The password is never
+  written to KV — it only ever travels in that final verify request.
+- Both `/api/auth/login` and `/api/auth/signup-otp/request` require a valid
+  Cloudflare Turnstile token (same widget/verification pattern as the
+  contact form and reviews), so the account pages aren't a softer target
+  for bots than the rest of the site's forms.
 - On success, either endpoint issues our **own** session: a random 32-byte
   token stored server-side (`src/lib/session.ts`, `RATE_LIMIT_KV`, 30-day
   TTL) mapped to `{email, name}`, sent to the browser as an `HttpOnly`,

@@ -1,16 +1,19 @@
-// POST /api/auth/signup { email, password, firstName, lastName }
-// Creates a real WooCommerce customer (WordPress user) via the admin REST
-// API, then issues an HttpOnly session cookie immediately — no separate
-// login step needed right after signing up.
+// POST /api/auth/signup-otp/verify { email, code, password, firstName, lastName }
+// Step 2 of signup: confirms the one-time code from
+// /api/auth/signup-otp/request, then creates the real WooCommerce customer
+// and signs them in immediately (session cookie). The password only ever
+// travels in this request — it's never written to KV.
 import type { APIRoute } from 'astro';
-import { createCustomer } from '../../../lib/woocommerce';
-import { createSession, sessionCookieHeader } from '../../../lib/session';
-import { sanitizeText, checkRateLimit, clientIp } from '../../../lib/security';
+import { verifySignupOtp } from '../../../../lib/signupOtp';
+import { createCustomer } from '../../../../lib/woocommerce';
+import { createSession, sessionCookieHeader } from '../../../../lib/session';
+import { sanitizeText, checkRateLimit, clientIp } from '../../../../lib/security';
 
 export const prerender = false;
 
-interface SignupPayload {
+interface Payload {
   email?: string;
+  code?: string;
   password?: string;
   firstName?: string;
   lastName?: string;
@@ -20,12 +23,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const env = locals.runtime.env;
   const ip = clientIp(request);
 
-  const withinLimit = await checkRateLimit(env.RATE_LIMIT_KV, `signup:${ip}`, 5, 600);
+  const withinLimit = await checkRateLimit(env.RATE_LIMIT_KV, `signup-otp-verify:${ip}`, 10, 600);
   if (!withinLimit) {
     return new Response(JSON.stringify({ error: 'Too many attempts, please try again shortly.' }), { status: 429 });
   }
 
-  let payload: SignupPayload;
+  let payload: Payload;
   try {
     payload = await request.json();
   } catch {
@@ -33,15 +36,21 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const email = sanitizeText(payload.email ?? '', 120);
+  const code = sanitizeText(payload.code ?? '', 10);
   const firstName = sanitizeText(payload.firstName ?? '', 60);
   const lastName = sanitizeText(payload.lastName ?? '', 60);
   const password = payload.password ?? '';
 
-  if (!email || !email.includes('@') || !firstName || password.length < 8) {
+  if (!email || !code || !firstName || password.length < 8) {
     return new Response(
-      JSON.stringify({ error: 'Please enter your name, a valid email, and a password of at least 8 characters.' }),
+      JSON.stringify({ error: 'Please enter your name, the code from your email, and a password of at least 8 characters.' }),
       { status: 400 }
     );
+  }
+
+  const validCode = await verifySignupOtp(env.RATE_LIMIT_KV, email, code);
+  if (!validCode) {
+    return new Response(JSON.stringify({ error: 'Incorrect or expired code.' }), { status: 400 });
   }
 
   try {

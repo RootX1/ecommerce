@@ -7,7 +7,7 @@
 import type { APIRoute } from 'astro';
 import { loginWithPassword } from '../../../lib/wpAuth';
 import { createSession, sessionCookieHeader } from '../../../lib/session';
-import { sanitizeText, checkRateLimit, clientIp } from '../../../lib/security';
+import { sanitizeText, checkRateLimit, clientIp, verifyTurnstile } from '../../../lib/security';
 
 export const prerender = false;
 
@@ -20,7 +20,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response(JSON.stringify({ error: 'Too many attempts, please try again shortly.' }), { status: 429 });
   }
 
-  let payload: { email?: string; password?: string };
+  let payload: { email?: string; password?: string; turnstileToken?: string };
   try {
     payload = await request.json();
   } catch {
@@ -31,6 +31,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const password = payload.password ?? '';
   if (!email || !password) {
     return new Response(JSON.stringify({ error: 'Please enter your email and password.' }), { status: 400 });
+  }
+
+  const human = await verifyTurnstile(payload.turnstileToken ?? '', env.TURNSTILE_SECRET_KEY, ip);
+  if (!human) {
+    return new Response(JSON.stringify({ error: 'Verification failed, please try again.' }), { status: 400 });
   }
 
   try {

@@ -25,6 +25,7 @@ export interface Product {
   posterUrl: string;
   category: string;
   shortDescription?: string;
+  description?: string;
   reviews: Review[];
   /** True when this product is in the "Personalised" WooCommerce category — shows the design-upload field. */
   requiresUpload?: boolean;

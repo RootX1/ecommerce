@@ -40,6 +40,7 @@ export interface WooProduct {
   average_rating: string;
   rating_count: number;
   short_description: string;
+  description: string;
   images: { src: string }[];
   categories: { id: number; name: string; slug: string }[];
   meta_data: { key: string; value: unknown }[];

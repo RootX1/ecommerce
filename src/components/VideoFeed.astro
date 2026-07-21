@@ -210,12 +210,24 @@ const feedData = products.map((p) => ({
     if (!product || !reviewBackdrop || !reviewList || !reviewSummary) return;
     activeProductId = productId;
 
+    // Don't show either the sign-in prompt or the form until we know the
+    // real state — otherwise a signed-in user briefly (and confusingly)
+    // sees "you must sign in" while the check is still in flight.
+    if (signinPrompt) signinPrompt.hidden = true;
+    if (reviewForm) reviewForm.hidden = true;
+
     // Re-check the real session on every open rather than trusting cached
     // state — it may have expired or been signed out elsewhere.
     fetchCurrentUser().then((user) => {
       currentUser = user;
       renderAuthState();
     });
+
+    // The Turnstile token is issued once when the widget first renders and
+    // expires after a few minutes — refresh it every time the sheet opens
+    // so it's never stale by the time the user actually submits, no matter
+    // how long they'd been browsing beforehand.
+    resetTurnstile();
 
     reviewSummary.innerHTML = '';
     const avg = document.createElement('span');

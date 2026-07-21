@@ -26,6 +26,19 @@ function plainShortDescription(html: string, maxLength = 140): string {
   return `${text.slice(0, maxLength - 1).trimEnd()}…`;
 }
 
+/**
+ * The full product description keeps its HTML formatting (paragraphs,
+ * lists) since it's authored by the store owner in wp-admin, not user
+ * input — but still strips script tags/inline event handlers as
+ * defense-in-depth in case wp-admin is ever compromised.
+ */
+function sanitizeDescriptionHtml(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/href\s*=\s*(["'])\s*javascript:[^"']*\1/gi, 'href="#"');
+}
+
 export function mapWooProduct(product: WooProduct): Product {
   const regularPrice = Number(product.regular_price || product.price || 0);
   const price = Number(product.price || regularPrice);
@@ -45,6 +58,7 @@ export function mapWooProduct(product: WooProduct): Product {
     posterUrl: metaValue(product, 'video_poster_url') || product.images?.[0]?.src || '',
     category: product.categories?.[0]?.name ?? 'Shop',
     shortDescription: product.short_description ? plainShortDescription(product.short_description) : '',
+    description: product.description ? sanitizeDescriptionHtml(product.description) : '',
     reviews: [] as Review[],
     requiresUpload: product.categories?.some((c) => isPersonalisedCategory(c.name, c.slug)) ?? false,
   };
