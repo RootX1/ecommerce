@@ -2,11 +2,10 @@
 // Single shared bottom-sheet instance, reused for whichever product is
 // currently active in the feed. Content is populated client-side by
 // VideoFeed.astro's script so this stays one DOM node instead of one per video.
-// Signing in/up/out is handled entirely on the Profile page (src/pages/account.astro)
-// — this sheet only checks whether a session already exists and, if not,
-// points the visitor there instead of duplicating the auth forms.
-import { withBase } from '../lib/base';
-const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
+// Reviews are READ here (via the WooCommerce REST API) but WRITTEN on the
+// actual WooCommerce product page — that page already has a fully working
+// review form gated by native WordPress login, verified-purchase badges,
+// and moderation, so there's no reason to rebuild any of that here.
 ---
 
 <div class="review-sheet-backdrop" data-review-backdrop hidden>
@@ -23,44 +22,9 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
       <p class="empty-state" data-review-empty hidden>No reviews yet — be the first!</p>
     </div>
 
-    <div class="signin-prompt" data-signin-prompt>
-      <p class="signin-prompt-text">You must be signed in to write a review.</p>
-      <a class="signin-prompt-btn" href={withBase('/account')}>Sign in / Create account</a>
-    </div>
-
-    <form class="review-form" data-review-form hidden>
-      <p class="signed-in-as" data-signed-in-as></p>
-
-      <div class="star-row">
-        <div class="star-input" data-star-input role="radiogroup" aria-label="Rating">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button type="button" class="star" data-star-value={n} aria-label={`${n} star`}>★</button>
-          ))}
-          <input type="hidden" name="rating" data-rating-value value="0" />
-        </div>
-        <p class="star-hint">Tap a star to choose your rating</p>
-      </div>
-
-      <textarea
-        name="text"
-        placeholder="Share your experience..."
-        required
-        maxlength="2000"
-        rows="3"
-        data-review-text
-      ></textarea>
-
-      <!-- Honeypot: hidden from real users via CSS, bots tend to fill every field -->
-      <div class="hp-field" aria-hidden="true">
-        <label for="website">Website</label>
-        <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" />
-      </div>
-
-      {turnstileSiteKey && <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-appearance="interaction-only" />}
-
-      <button type="submit" class="submit-btn" data-submit-btn>Post review</button>
-      <p class="form-error" data-review-error hidden></p>
-    </form>
+    <a class="write-review-btn" data-write-review-link href="#" target="_blank" rel="noopener noreferrer">
+      Write a review on our site
+    </a>
   </div>
 </div>
 
@@ -173,125 +137,17 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     padding: 20px 0;
   }
 
-  .signin-prompt {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-    border-top: 1px solid var(--border);
-    padding-top: 12px;
-  }
-
-  .signin-prompt-text {
-    font-size: 13px;
-    color: var(--muted);
-    margin: 0;
-  }
-
-  .signin-prompt-btn {
-    display: inline-block;
+  .write-review-btn {
+    display: block;
+    text-align: center;
     background: var(--primary);
     color: var(--primary-text);
     text-decoration: none;
     border-radius: 8px;
-    padding: 11px 18px;
+    padding: 13px;
     font-weight: 600;
     font-size: 14px;
-  }
-
-  .signed-in-as {
-    font-size: 12px;
-    color: var(--muted);
-    margin: 0;
-  }
-
-  .review-form {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding-top: 12px;
-  }
-
-  .star-row {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .star-input {
-    display: flex;
-    gap: 6px;
-  }
-
-  .star {
-    background: none;
-    border: none;
-    font-size: 34px;
-    line-height: 1;
-    color: var(--border);
-    cursor: pointer;
-    padding: 0;
-  }
-
-  .star.selected {
-    color: var(--secondary);
-  }
-
-  .star:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-
-  .star-hint {
-    font-size: 12px;
-    color: var(--muted);
-    margin: 0;
-  }
-
-  .cf-turnstile {
-    display: flex;
-    justify-content: center;
-    max-width: 100%;
-    overflow: hidden;
-  }
-
-  .review-form textarea {
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: 8px;
-    padding: 10px;
-    color: var(--fg);
-    font-size: 14px;
-    resize: none;
-  }
-
-  .hp-field {
-    position: absolute;
-    left: -9999px;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-  }
-
-  .submit-btn {
-    background: var(--primary);
-    color: var(--primary-text);
-    border: none;
-    border-radius: 8px;
-    padding: 12px;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-  }
-
-  .submit-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .form-error {
-    color: #d92d20;
-    font-size: 13px;
-    margin: 0;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
   }
 </style>

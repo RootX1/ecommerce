@@ -66,58 +66,34 @@ put`, never `wrangler.jsonc`) — none of these ever reach the browser.
 - Rotate the WooCommerce Consumer Key/Secret and Turnstile secret
   immediately if they are ever exposed in a log, screenshot, or commit.
 
-## Accounts: real WooCommerce login, session-cookie authorization
+## Accounts: WooCommerce's own login, not a rebuilt one
 
-- Reviews and order lookups require a real WooCommerce account, not just an
-  email address. All sign-in/sign-up/sign-out UI lives on the Profile page
-  (`src/pages/account.astro`) only — other surfaces like the review sheet
-  just check session state and link there, rather than duplicating auth
-  forms in multiple places.
-- Sign-in (`POST /api/auth/login`, `src/lib/wpAuth.ts`) checks the password
-  against WordPress's own user table via the "JWT Authentication for WP
-  REST API" plugin's `/wp-json/jwt-auth/v1/token` endpoint — we never store
-  or reuse the JWT itself, it's only used once to confirm the password is
-  correct.
-- Sign-up is two-step and requires a second factor: `POST
-  /api/auth/signup-otp/request` emails a 6-digit one-time code
-  (`src/lib/signupOtp.ts`) before anything is created; only
-  `POST /api/auth/signup-otp/verify`, given the correct code, actually
-  creates the WooCommerce customer (`createCustomer` in
-  `src/lib/woocommerce.ts`) and signs them in. The password is never
-  written to KV — it only ever travels in that final verify request.
-- Both `/api/auth/login` and `/api/auth/signup-otp/request` require a valid
-  Cloudflare Turnstile token (same widget/verification pattern as the
-  contact form and reviews), so the account pages aren't a softer target
-  for bots than the rest of the site's forms.
-- On success, either endpoint issues our **own** session: a random 32-byte
-  token stored server-side (`src/lib/session.ts`, `RATE_LIMIT_KV`, 30-day
-  TTL) mapped to `{email, name}`, sent to the browser as an `HttpOnly`,
-  `Secure`, `SameSite=Lax` cookie scoped to `/store`.
-- **This is the important part**: every gated endpoint
-  (`/api/reviews` POST, `/api/orders`) resolves identity by reading that
-  cookie and looking up the session server-side — never from an email/name
-  the client claims in the request body. Earlier iterations of this
-  gate (both a one-time-email-code version and, briefly, a "has this email
-  ever verified" KV flag) had a real flaw: anything that could send a
-  request with a target's email address could pass their gate, since
-  nothing tied "you proved a password" to "this specific request." The
-  `HttpOnly` cookie is what closes that gap — client-side JS can't read or
-  forge it, so only the browser that actually authenticated can act as
-  that account.
-- First-time reviewers' submissions are still marked `hold` so they sit in
-  the WooCommerce moderation queue before appearing.
-- `POST /api/auth/logout` deletes the server-side session and clears the
-  cookie. `GET /api/auth/me` lets the UI check real, current session state
-  instead of trusting anything cached client-side.
-- Login/signup are rate-limited per IP (`checkRateLimit`) same as
-  reviews/checkout/contact, but there is no per-account lockout — consider
-  adding a WordPress login-attempt-limiting plugin if brute-forcing a
-  specific customer's password becomes a concern.
-- Verified-purchase badges shown on existing reviews are driven by
-  WooCommerce's own order history — cross-reference the reviewer's email
-  against completed orders for that product (WooCommerce Product Reviews
-  Pro or a small custom REST filter can automate this; document the exact
-  plugin choice once picked).
+- **No custom login/session/2FA system.** Earlier iterations of this
+  project built a full parallel auth stack for the headless storefront —
+  a JWT-plugin password check, our own session cookies, a custom two-step
+  email-code signup flow. That was the wrong call: WooCommerce already has
+  a complete, battle-tested account system (login, registration, lost
+  password, order history, address book) the moment WooCommerce is active,
+  at `https://yourdomain.co.za/my-account/`. Reimplementing it headlessly
+  just meant maintaining a second, less-tested copy of the same thing.
+- The storefront's Profile tab (`src/pages/account.astro`) is a thin page:
+  a card linking to the real WooCommerce My Account page for
+  sign-in/sign-up/orders/account details, plus the wishlist (which *is*
+  storefront-specific, since WooCommerce has no native wishlist).
+- **Reviews are written on the actual WooCommerce product page, not in
+  this app.** The review sheet (`ReviewModal.astro`) reads existing
+  reviews via the REST API for display, but "Write a review" links out to
+  `{wordpress-origin}/?p={productId}` — WordPress's canonical
+  permalink-independent way to reach a post by ID — where WooCommerce's
+  native review form already handles login-gating, verified-purchase
+  badges, and moderation correctly, because it's WooCommerce's own code
+  path rather than a reimplementation of it.
+- Net effect: no session cookies, no JWT plugin dependency, no password
+  ever touching the Worker at all. The Worker's WooCommerce REST
+  credentials (`WOOCOMMERCE_CONSUMER_KEY/SECRET`) remain the only
+  "identity" it holds, used solely for its own admin-level read/write
+  calls (products, orders it creates at checkout, shipping settings) —
+  never on behalf of a signed-in customer.
 
 ## Spam protection stack
 

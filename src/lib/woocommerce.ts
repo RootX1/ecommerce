@@ -75,22 +75,6 @@ export function listProductReviews(env: WooCommerceEnv, productId: string | numb
   return wooFetch(env, `/products/reviews?product=${productId}&status=approved`);
 }
 
-export interface NewReviewInput {
-  product_id: number;
-  review: string;
-  reviewer: string;
-  reviewer_email: string;
-  rating: number;
-  status: 'hold' | 'approved';
-}
-
-export function createProductReview(env: WooCommerceEnv, input: NewReviewInput) {
-  return wooFetch(env, '/products/reviews', {
-    method: 'POST',
-    body: JSON.stringify(input),
-  });
-}
-
 export interface NewOrderInput {
   status: string;
   payment_method: string;
@@ -118,39 +102,6 @@ export function updateOrderStatus(env: WooCommerceEnv, orderId: string | number,
 
 export function getOrder(env: WooCommerceEnv, orderId: string | number) {
   return wooFetch(env, `/orders/${orderId}`);
-}
-
-export interface WooOrder {
-  id: number;
-  status: string;
-  date_created: string;
-  total: string;
-  billing: { email: string };
-  line_items: { name: string; quantity: number }[];
-}
-
-/** Looks up orders placed under a given billing email — used for the account "Orders" tab. */
-export function getOrdersByEmail(env: WooCommerceEnv, email: string) {
-  const params = new URLSearchParams({ search: email, per_page: '50' });
-  return wooFetch<WooOrder[]>(env, `/orders?${params.toString()}`).then((orders) =>
-    orders.filter((o) => o.billing?.email?.toLowerCase() === email.toLowerCase())
-  );
-}
-
-export interface NewCustomerInput {
-  email: string;
-  first_name: string;
-  last_name: string;
-  username: string;
-  password: string;
-}
-
-/** Creates a real WordPress user + WooCommerce customer — used by the storefront's signup form. */
-export function createCustomer(env: WooCommerceEnv, input: NewCustomerInput) {
-  return wooFetch(env, '/customers', {
-    method: 'POST',
-    body: JSON.stringify(input),
-  });
 }
 
 export interface BacsAccountDetail {

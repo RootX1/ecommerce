@@ -43,8 +43,13 @@ const feedData = products.map((p) => ({
 </style>
 
 <script>
-  import { submitReview, fetchCurrentUser, type AuthResult } from '../lib/api';
   import { withBase } from '../lib/base';
+
+  // WordPress is the origin with the /wp-json/... suffix stripped — used to
+  // link "Write a review" at the actual WooCommerce product page, where
+  // review submission already works natively (WordPress login, verified
+  // purchase badges, moderation) instead of reimplementing any of that here.
+  const wpOrigin = (import.meta.env.PUBLIC_WOOCOMMERCE_API_URL as string).replace(/\/wp-json\/.*$/, '');
 
   interface FeedProduct {
     id: string;
@@ -178,28 +183,7 @@ const feedData = products.map((p) => ({
   const reviewBackdrop = document.querySelector<HTMLElement>('[data-review-backdrop]');
   const reviewList = document.querySelector<HTMLElement>('[data-review-list]');
   const reviewSummary = document.querySelector<HTMLElement>('[data-review-summary]');
-  const reviewForm = document.querySelector<HTMLFormElement>('[data-review-form]');
-  const reviewError = document.querySelector<HTMLElement>('[data-review-error]');
-  const ratingInput = document.querySelector<HTMLInputElement>('[data-rating-value]');
-  const submitBtn = document.querySelector<HTMLButtonElement>('[data-submit-btn]');
-  const stars = Array.from(document.querySelectorAll<HTMLElement>('.star'));
-  let activeProductId: string | null = null;
-
-  // --- Sign-in gate (reviews require a real account; all sign in/up/out UI
-  // and logic lives on the Profile page, src/pages/account.astro — this
-  // sheet only checks whether a session exists and links there if not) ----
-  const signinPrompt = document.querySelector<HTMLElement>('[data-signin-prompt]');
-  const signedInAs = document.querySelector<HTMLElement>('[data-signed-in-as]');
-  let currentUser: AuthResult | null = null;
-
-  function renderAuthState() {
-    const signedIn = !!currentUser;
-    if (signinPrompt) signinPrompt.hidden = signedIn;
-    if (reviewForm) reviewForm.hidden = !signedIn;
-    if (signedInAs && signedIn && currentUser) {
-      signedInAs.textContent = `Reviewing as ${currentUser.name || currentUser.email}`;
-    }
-  }
+  const writeReviewLink = document.querySelector<HTMLAnchorElement>('[data-write-review-link]');
 
   function renderStars(container: HTMLElement, rating: number) {
     container.textContent = '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating));
@@ -208,26 +192,8 @@ const feedData = products.map((p) => ({
   function openReviewSheet(productId: string) {
     const product = productById.get(productId);
     if (!product || !reviewBackdrop || !reviewList || !reviewSummary) return;
-    activeProductId = productId;
 
-    // Don't show either the sign-in prompt or the form until we know the
-    // real state — otherwise a signed-in user briefly (and confusingly)
-    // sees "you must sign in" while the check is still in flight.
-    if (signinPrompt) signinPrompt.hidden = true;
-    if (reviewForm) reviewForm.hidden = true;
-
-    // Re-check the real session on every open rather than trusting cached
-    // state — it may have expired or been signed out elsewhere.
-    fetchCurrentUser().then((user) => {
-      currentUser = user;
-      renderAuthState();
-    });
-
-    // The Turnstile token is issued once when the widget first renders and
-    // expires after a few minutes — refresh it every time the sheet opens
-    // so it's never stale by the time the user actually submits, no matter
-    // how long they'd been browsing beforehand.
-    resetTurnstile();
+    if (writeReviewLink) writeReviewLink.href = `${wpOrigin}/?p=${productId}`;
 
     reviewSummary.innerHTML = '';
     const avg = document.createElement('span');
@@ -271,11 +237,6 @@ const feedData = products.map((p) => ({
 
   function closeReviewSheet() {
     if (reviewBackdrop) reviewBackdrop.hidden = true;
-    reviewForm?.reset();
-    stars.forEach((s) => s.classList.remove('selected'));
-    if (ratingInput) ratingInput.value = '0';
-    if (reviewError) reviewError.hidden = true;
-    resetTurnstile();
   }
 
   document.querySelectorAll('[data-review-close]').forEach((el) =>
@@ -286,56 +247,6 @@ const feedData = products.map((p) => ({
   reviewBackdrop?.addEventListener('click', (e) => {
     if (e.target === reviewBackdrop) closeReviewSheet();
   });
-
-  stars.forEach((star) => {
-    star.addEventListener('click', () => {
-      const value = Number(star.dataset.starValue);
-      if (ratingInput) ratingInput.value = String(value);
-      stars.forEach((s) => s.classList.toggle('selected', Number(s.dataset.starValue) <= value));
-    });
-  });
-
-  reviewForm?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!activeProductId || !reviewError) return;
-    if (!currentUser) {
-      reviewError.hidden = false;
-      reviewError.textContent = 'Please sign in before submitting a review.';
-      return;
-    }
-    const formData = new FormData(reviewForm);
-    const rating = Number(formData.get('rating'));
-    if (!rating) {
-      reviewError.hidden = false;
-      reviewError.textContent = 'Please select a star rating.';
-      return;
-    }
-
-    if (submitBtn) submitBtn.disabled = true;
-    reviewError.hidden = true;
-
-    try {
-      await submitReview({
-        productId: Number(activeProductId),
-        rating,
-        text: String(formData.get('text') ?? ''),
-        turnstileToken: String(formData.get('cf-turnstile-response') ?? ''),
-        website: String(formData.get('website') ?? ''),
-        isFirstTimeReviewer: true,
-      });
-      resetTurnstile();
-      closeReviewSheet();
-    } catch (err) {
-      reviewError.hidden = false;
-      reviewError.textContent = err instanceof Error ? err.message : 'Something went wrong, please try again.';
-    } finally {
-      if (submitBtn) submitBtn.disabled = false;
-    }
-  });
-
-  function resetTurnstile() {
-    (window as unknown as { turnstile?: { reset: () => void } }).turnstile?.reset();
-  }
 
   // --- Share sheet ---------------------------------------------------------
   const shareBackdrop = document.querySelector<HTMLElement>('[data-share-backdrop]');

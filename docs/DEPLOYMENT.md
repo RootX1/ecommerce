@@ -63,28 +63,12 @@ controls — so the repo is built to match it:
       put mugs/personalised items in it — the product page automatically
       shows a design-upload field for any product in that category (see
       `src/lib/mapProduct.ts`).
-- [ ] **Install "JWT Authentication for WP REST API"** (wp-admin → Plugins
-      → Add New) and activate it — this powers real customer sign-in
-      (reviews, order lookups). After activating, add to `wp-config.php`
-      (above the "stop editing" line):
-      ```php
-      define('JWT_AUTH_SECRET_KEY', 'a-long-random-string-you-make-up');
-      define('JWT_AUTH_CORS_ENABLE', true);
-      ```
-      and, since Apache/Xneelo strips the `Authorization` header by default
-      (the same issue that broke the WooCommerce REST API earlier in this
-      project), add this to the WordPress root `.htaccess`, above the
-      WordPress rewrite rules:
-      ```apache
-      RewriteEngine on
-      RewriteCond %{HTTP:Authorization} ^(.*)
-      RewriteRule ^(.*) - [E=HTTP_AUTHORIZATION:%1]
-      ```
-      Confirm it works: `curl -X POST https://yourdomain.co.za/wp-json/jwt-auth/v1/token -H "Content-Type: application/json" -d '{"username":"...","password":"..."}'`
-      should return a JSON object containing a `token`. No Worker secrets
-      are needed for this — sign-in/sign-up (`src/pages/api/auth/*.ts`) use
-      the existing `PUBLIC_WORDPRESS_API_URL` and WooCommerce admin
-      REST keys already configured above.
+- [ ] No plugin needed for accounts: sign-in, registration, and order
+      history are handled entirely by WooCommerce's own native **My
+      Account** page (`https://yourdomain.co.za/my-account/`, created
+      automatically when WooCommerce is active). The storefront's Profile
+      tab just links there instead of reimplementing any of it — see "Why
+      no custom login system" in `docs/SECURITY.md`.
 
 ## Phase 2 — Configure and deploy the Worker
 

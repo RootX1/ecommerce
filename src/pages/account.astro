@@ -1,82 +1,28 @@
 ---
 import Layout from '../layouts/Layout.astro';
-const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
+
+// Login, registration, order history, and account details are all handled
+// by WooCommerce's own native "My Account" page — no reason to rebuild any
+// of that here. This page only adds what WooCommerce doesn't have out of
+// the box: the wishlist (device-local, not tied to an account).
+const MY_ACCOUNT_URL = 'https://ecommercegoods.co.za/my-account/';
 ---
 
 <Layout title="My Account">
   <div class="account-page">
-    <div class="page-header">
-      <h1>My Account</h1>
-      <button type="button" class="logout-btn" data-logout-btn hidden>Sign out</button>
-    </div>
+    <h1>My Account</h1>
 
-    <div class="auth-gate" data-auth-gate>
-      <p class="auth-heading" data-auth-heading>Sign in to your account</p>
-
-      <form class="auth-form" data-login-form>
-        <input type="email" name="email" placeholder="Email" required maxlength="120" />
-        <input type="password" name="password" placeholder="Password" required maxlength="200" />
-        {turnstileSiteKey && <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-appearance="interaction-only" />}
-        <button type="submit" class="primary-btn">Sign in</button>
-      </form>
-
-      <button type="button" class="auth-toggle" data-auth-toggle>Don't have an account? Create one</button>
-
-      <form class="auth-form" data-signup-form hidden>
-        <div class="field-row">
-          <input type="text" name="firstName" placeholder="First name" required maxlength="60" />
-          <input type="text" name="lastName" placeholder="Last name" required maxlength="60" />
-        </div>
-        <input type="email" name="email" placeholder="Email" required maxlength="120" data-signup-email />
-        <input type="password" name="password" placeholder="Password (min 8 characters)" required minlength="8" maxlength="200" />
-        {turnstileSiteKey && <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-appearance="interaction-only" />}
-        <button type="submit" class="primary-btn" data-signup-submit>Send verification code</button>
-
-        <div class="otp-row" data-otp-row hidden>
-          <p class="otp-hint">We've emailed a 6-digit code to <strong data-otp-email></strong> — enter it below to finish creating your account.</p>
-          <input type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" data-otp-code />
-          <button type="button" class="primary-btn" data-otp-verify>Verify &amp; create account</button>
-        </div>
-      </form>
-
-      <p class="auth-status" data-auth-status hidden></p>
-    </div>
-
-    <div data-account-body hidden>
-      <div class="account-tabs">
-        <button class="tab active" data-tab="orders">Orders</button>
-        <button class="tab" data-tab="wishlist">Wishlist</button>
-        <button class="tab" data-tab="settings">Settings</button>
+    <a class="my-account-card" href={MY_ACCOUNT_URL}>
+      <div class="my-account-card-text">
+        <p class="my-account-card-title">Sign in or create an account</p>
+        <p class="my-account-card-hint">View your orders, manage your details, and sign in — on our secure account page.</p>
       </div>
+      <span class="my-account-card-arrow" aria-hidden="true">→</span>
+    </a>
 
-      <div class="tab-panel" data-panel="orders">
-        <div class="orders-list" data-orders-list></div>
-      </div>
-
-      <div class="tab-panel" data-panel="wishlist" hidden>
-        <div data-wishlist-list class="wishlist-grid"></div>
-        <p class="hint" data-wishlist-empty hidden>Your wishlist is empty — heart a product in the feed to save it here.</p>
-      </div>
-
-      <div class="tab-panel" data-panel="settings" hidden>
-        <div class="settings-card">
-          <dl class="settings-fields">
-            <dt>Email</dt>
-            <dd data-settings-email></dd>
-            <dt>Name</dt>
-            <dd data-settings-name></dd>
-          </dl>
-        </div>
-        <p class="hint">Delivery address and password are managed via your order confirmations and WhatsApp/email support for now.</p>
-      </div>
-    </div>
-
-    <!-- Wishlist works without signing in — shown outside the auth gate too, until signed in. -->
-    <div class="tab-panel" data-panel="wishlist-standalone" hidden>
-      <h2>Wishlist</h2>
-      <div data-wishlist-list-standalone class="wishlist-grid"></div>
-      <p class="hint" data-wishlist-empty-standalone hidden>Your wishlist is empty — heart a product in the feed to save it here.</p>
-    </div>
+    <h2>Wishlist</h2>
+    <div data-wishlist-list class="wishlist-grid"></div>
+    <p class="hint" data-wishlist-empty hidden>Your wishlist is empty — heart a product in the feed to save it here.</p>
   </div>
 </Layout>
 
@@ -85,12 +31,6 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     padding: 16px 16px calc(16px + var(--nav-height));
     overflow-y: auto;
     height: 100%;
-  }
-  .page-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
   }
   h1 {
     font-size: 20px;
@@ -105,141 +45,31 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     font-size: 13px;
   }
 
-  .auth-gate {
+  .my-account-card {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-width: 340px;
-    margin-top: 12px;
-  }
-  .auth-heading {
-    font-size: 14px;
-    font-weight: 700;
-    margin: 0;
-  }
-  .auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .auth-form .field-row {
-    display: flex;
-    gap: 8px;
-  }
-  .auth-form input {
-    flex: 1;
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: 8px;
-    padding: 12px;
-    color: var(--fg);
-    font-size: 14px;
-    min-width: 0;
-  }
-  .cf-turnstile {
-    display: flex;
-    justify-content: center;
-    max-width: 100%;
-    overflow: hidden;
-  }
-  .otp-row {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 4px;
-    padding-top: 10px;
-    border-top: 1px dashed var(--border);
-  }
-  .otp-hint {
-    font-size: 12px;
-    color: var(--muted);
-    margin: 0;
-  }
-  .auth-toggle {
-    background: none;
-    border: none;
-    color: var(--primary);
-    font-size: 13px;
-    text-decoration: underline;
-    cursor: pointer;
-    padding: 0;
-    align-self: flex-start;
-  }
-  .auth-status {
-    font-size: 13px;
-    margin: 0;
-  }
-  .auth-status.success {
-    color: #12b76a;
-  }
-  .auth-status.error {
-    color: #d92d20;
-  }
-
-  .account-tabs {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    margin: 12px 0;
-  }
-  .tab {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    color: var(--muted);
-    padding: 8px 14px;
-    border-radius: 20px;
-    font-size: 13px;
-    white-space: nowrap;
-    cursor: pointer;
-  }
-  .tab.active {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: var(--primary-text);
-  }
-
-  .primary-btn {
-    background: var(--primary);
-    color: var(--primary-text);
-    border: none;
-    border-radius: 8px;
-    padding: 11px 16px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .primary-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .orders-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .order-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 14px;
-  }
-  .order-card-header {
-    display: flex;
+    align-items: center;
     justify-content: space-between;
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 4px;
+    gap: 12px;
+    background: var(--primary);
+    color: var(--primary-text);
+    text-decoration: none;
+    border-radius: 10px;
+    padding: 16px;
+    margin-top: 14px;
   }
-  .order-status {
-    text-transform: capitalize;
+  .my-account-card-title {
+    margin: 0 0 4px;
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .my-account-card-hint {
+    margin: 0;
     font-size: 12px;
-    color: var(--muted);
+    opacity: 0.85;
   }
-  .order-items {
-    font-size: 13px;
-    color: var(--muted);
-    margin: 4px 0 0;
+  .my-account-card-arrow {
+    font-size: 20px;
+    flex-shrink: 0;
   }
 
   .wishlist-grid {
@@ -289,58 +119,14 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     cursor: pointer;
     line-height: 1;
   }
-
-  .settings-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px;
-    margin-bottom: 12px;
-  }
-  .settings-fields {
-    margin: 0;
-    font-size: 13px;
-  }
-  .settings-fields dt {
-    color: var(--muted);
-  }
-  .settings-fields dd {
-    margin: 0 0 8px;
-    font-weight: 600;
-  }
-  .logout-btn {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    color: var(--fg);
-    border-radius: 8px;
-    padding: 8px 14px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
 </style>
 
 <script>
-  import {
-    fetchProductsByIds,
-    loginUser,
-    requestSignupCode,
-    verifySignupCode,
-    logoutUser,
-    fetchCurrentUser,
-    fetchMyOrders,
-    type AuthResult,
-    type OrderSummary,
-  } from '../lib/api';
+  import { fetchProductsByIds } from '../lib/api';
   import { withBase } from '../lib/base';
 
   function formatZar(amount: number): string {
     return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(amount);
-  }
-
-  function resetTurnstile() {
-    (window as unknown as { turnstile?: { reset: () => void } }).turnstile?.reset();
   }
 
   const WISHLIST_KEY = 'tiktok-shop-wishlist';
@@ -365,16 +151,19 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     images: { src: string }[];
   }
 
-  async function renderWishlistInto(listEl: HTMLElement | null, emptyEl: HTMLElement | null) {
+  const wishlistList = document.querySelector<HTMLElement>('[data-wishlist-list]');
+  const wishlistEmpty = document.querySelector<HTMLElement>('[data-wishlist-empty]');
+
+  async function renderWishlist() {
     const ids = getWishlist();
-    if (!listEl) return;
+    if (!wishlistList) return;
     if (ids.length === 0) {
-      listEl.innerHTML = '';
-      if (emptyEl) emptyEl.hidden = false;
+      wishlistList.innerHTML = '';
+      if (wishlistEmpty) wishlistEmpty.hidden = false;
       return;
     }
-    if (emptyEl) emptyEl.hidden = true;
-    listEl.innerHTML = '<p class="hint">Loading your wishlist…</p>';
+    if (wishlistEmpty) wishlistEmpty.hidden = true;
+    wishlistList.innerHTML = '<p class="hint">Loading your wishlist…</p>';
 
     try {
       const products: WooProductLite[] = await fetchProductsByIds(ids);
@@ -382,12 +171,12 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
       const ordered = ids.map((id) => byId.get(id)).filter((p): p is WooProductLite => !!p);
 
       if (ordered.length === 0) {
-        listEl.innerHTML = '';
-        if (emptyEl) emptyEl.hidden = false;
+        wishlistList.innerHTML = '';
+        if (wishlistEmpty) wishlistEmpty.hidden = false;
         return;
       }
 
-      listEl.innerHTML = '';
+      wishlistList.innerHTML = '';
       for (const product of ordered) {
         const card = document.createElement('a');
         card.className = 'wishlist-card';
@@ -404,193 +193,14 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
           e.preventDefault();
           e.stopPropagation();
           setWishlist(getWishlist().filter((id) => id !== String(product.id)));
-          renderWishlistInto(listEl, emptyEl);
+          renderWishlist();
         });
-        listEl.appendChild(card);
+        wishlistList.appendChild(card);
       }
     } catch {
-      listEl.innerHTML = '<p class="hint">Unable to load your wishlist right now.</p>';
+      wishlistList.innerHTML = '<p class="hint">Unable to load your wishlist right now.</p>';
     }
   }
 
-  // --- Auth gate --------------------------------------------------------
-  const authGate = document.querySelector<HTMLElement>('[data-auth-gate]');
-  const authHeading = document.querySelector<HTMLElement>('[data-auth-heading]');
-  const accountBody = document.querySelector<HTMLElement>('[data-account-body]');
-  const loginForm = document.querySelector<HTMLFormElement>('[data-login-form]');
-  const signupForm = document.querySelector<HTMLFormElement>('[data-signup-form]');
-  const signupSubmitBtn = document.querySelector<HTMLButtonElement>('[data-signup-submit]');
-  const otpRow = document.querySelector<HTMLElement>('[data-otp-row]');
-  const otpEmailEl = document.querySelector<HTMLElement>('[data-otp-email]');
-  const otpCodeInput = document.querySelector<HTMLInputElement>('[data-otp-code]');
-  const otpVerifyBtn = document.querySelector<HTMLButtonElement>('[data-otp-verify]');
-  const authToggleBtn = document.querySelector<HTMLButtonElement>('[data-auth-toggle]');
-  const authStatus = document.querySelector<HTMLElement>('[data-auth-status]');
-  const logoutBtn = document.querySelector<HTMLButtonElement>('[data-logout-btn]');
-  const settingsEmail = document.querySelector<HTMLElement>('[data-settings-email]');
-  const settingsName = document.querySelector<HTMLElement>('[data-settings-name]');
-  const ordersListEl = document.querySelector<HTMLElement>('[data-orders-list]');
-  const standaloneWishlistPanel = document.querySelector<HTMLElement>('[data-panel="wishlist-standalone"]');
-
-  function setAuthStatus(message: string, kind: 'success' | 'error' | '') {
-    if (!authStatus) return;
-    authStatus.hidden = false;
-    authStatus.textContent = message;
-    authStatus.className = `auth-status${kind ? ` ${kind}` : ''}`;
-  }
-
-  function renderOrders(orders: OrderSummary[]) {
-    if (!ordersListEl) return;
-    if (orders.length === 0) {
-      ordersListEl.innerHTML = '<p class="hint">No orders yet.</p>';
-      return;
-    }
-    ordersListEl.innerHTML = orders
-      .map(
-        (order) => `
-        <div class="order-card">
-          <div class="order-card-header">
-            <span>Order #${order.id}</span>
-            <span>${formatZar(Number(order.total))}</span>
-          </div>
-          <div class="order-status">${new Date(order.date_created).toLocaleDateString('en-ZA')} · ${order.status}</div>
-          <p class="order-items">${order.line_items.map((li) => `${li.quantity} × ${li.name}`).join(', ')}</p>
-        </div>
-      `
-      )
-      .join('');
-  }
-
-  async function showSignedIn(user: AuthResult) {
-    if (authGate) authGate.hidden = true;
-    if (accountBody) accountBody.hidden = false;
-    if (logoutBtn) logoutBtn.hidden = false;
-    if (standaloneWishlistPanel) standaloneWishlistPanel.hidden = true;
-    if (settingsEmail) settingsEmail.textContent = user.email;
-    if (settingsName) settingsName.textContent = user.name || '—';
-
-    if (ordersListEl) ordersListEl.innerHTML = '<p class="hint">Loading your orders…</p>';
-    try {
-      renderOrders(await fetchMyOrders());
-    } catch {
-      if (ordersListEl) ordersListEl.innerHTML = '<p class="hint">Unable to load your orders right now.</p>';
-    }
-
-    renderWishlistInto(
-      document.querySelector<HTMLElement>('[data-wishlist-list]'),
-      document.querySelector<HTMLElement>('[data-wishlist-empty]')
-    );
-  }
-
-  function showSignedOut() {
-    if (authGate) authGate.hidden = false;
-    if (accountBody) accountBody.hidden = true;
-    if (logoutBtn) logoutBtn.hidden = true;
-    if (standaloneWishlistPanel) standaloneWishlistPanel.hidden = false;
-    renderWishlistInto(
-      document.querySelector<HTMLElement>('[data-wishlist-list-standalone]'),
-      document.querySelector<HTMLElement>('[data-wishlist-empty-standalone]')
-    );
-  }
-
-  fetchCurrentUser().then((user) => {
-    if (user) showSignedIn(user);
-    else showSignedOut();
-  });
-
-  authToggleBtn?.addEventListener('click', () => {
-    const showingSignup = !signupForm?.hidden;
-    if (loginForm) loginForm.hidden = showingSignup;
-    if (signupForm) signupForm.hidden = !showingSignup;
-    if (authHeading) authHeading.textContent = showingSignup ? 'Create your account' : 'Sign in to your account';
-    if (authToggleBtn) {
-      authToggleBtn.textContent = showingSignup ? 'Already have an account? Sign in' : "Don't have an account? Create one";
-    }
-    if (authStatus) authStatus.hidden = true;
-    // Reset the OTP step too, in case they'd started signing up before switching.
-    if (otpRow) otpRow.hidden = true;
-    if (signupSubmitBtn) signupSubmitBtn.hidden = false;
-  });
-
-  loginForm?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(loginForm);
-    const submit = loginForm.querySelector<HTMLButtonElement>('.primary-btn');
-    if (submit) submit.disabled = true;
-    try {
-      const user = await loginUser(
-        String(formData.get('email') ?? ''),
-        String(formData.get('password') ?? ''),
-        String(formData.get('cf-turnstile-response') ?? '')
-      );
-      await showSignedIn(user);
-    } catch (err) {
-      setAuthStatus(err instanceof Error ? err.message : 'Sign in failed.', 'error');
-      resetTurnstile();
-    } finally {
-      if (submit) submit.disabled = false;
-    }
-  });
-
-  // Step 1: send the verification code.
-  signupForm?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(signupForm);
-    const email = String(formData.get('email') ?? '');
-    if (signupSubmitBtn) signupSubmitBtn.disabled = true;
-    try {
-      await requestSignupCode(email, String(formData.get('cf-turnstile-response') ?? ''));
-      if (otpRow) otpRow.hidden = false;
-      if (otpEmailEl) otpEmailEl.textContent = email;
-      if (signupSubmitBtn) signupSubmitBtn.hidden = true;
-      setAuthStatus('Code sent — check your inbox.', 'success');
-    } catch (err) {
-      setAuthStatus(err instanceof Error ? err.message : 'Unable to send code.', 'error');
-      resetTurnstile();
-    } finally {
-      if (signupSubmitBtn) signupSubmitBtn.disabled = false;
-    }
-  });
-
-  // Step 2: confirm the code and actually create the account.
-  otpVerifyBtn?.addEventListener('click', async () => {
-    if (!signupForm) return;
-    const formData = new FormData(signupForm);
-    const code = otpCodeInput?.value.trim() ?? '';
-    if (!code) {
-      setAuthStatus('Enter the 6-digit code from your email.', 'error');
-      return;
-    }
-    otpVerifyBtn.disabled = true;
-    try {
-      const user = await verifySignupCode({
-        email: String(formData.get('email') ?? ''),
-        code,
-        password: String(formData.get('password') ?? ''),
-        firstName: String(formData.get('firstName') ?? ''),
-        lastName: String(formData.get('lastName') ?? ''),
-      });
-      await showSignedIn(user);
-    } catch (err) {
-      setAuthStatus(err instanceof Error ? err.message : 'Incorrect or expired code.', 'error');
-    } finally {
-      otpVerifyBtn.disabled = false;
-    }
-  });
-
-  logoutBtn?.addEventListener('click', async () => {
-    await logoutUser();
-    showSignedOut();
-  });
-
-  // --- Tabs --------------------------------------------------------------
-  const tabs = document.querySelectorAll<HTMLElement>('.account-tabs .tab');
-  const panels = document.querySelectorAll<HTMLElement>('[data-account-body] .tab-panel');
-  tabs.forEach((tab) => {
-    tab.addEventListener('click', () => {
-      tabs.forEach((t) => t.classList.remove('active'));
-      tab.classList.add('active');
-      panels.forEach((p) => (p.hidden = p.dataset.panel !== tab.dataset.tab));
-    });
-  });
+  renderWishlist();
 </script>
