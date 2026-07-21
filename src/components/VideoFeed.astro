@@ -203,7 +203,11 @@ const wpOrigin = Astro.locals.runtime.env.PUBLIC_WOOCOMMERCE_API_URL.replace(/\/
     const product = productById.get(productId);
     if (!product || !reviewBackdrop || !reviewList || !reviewSummary) return;
 
-    if (writeReviewLink) writeReviewLink.href = `${wpOrigin}/?p=${productId}`;
+    // #tab-reviews is the id WooCommerce's own tab system uses — some
+    // themes auto-open the tab on load when the hash matches, though this
+    // isn't universal across every theme (see the JS snippet in
+    // docs/DEPLOYMENT.md for a small fix that makes it reliable).
+    if (writeReviewLink) writeReviewLink.href = `${wpOrigin}/?p=${productId}#tab-reviews`;
 
     reviewSummary.innerHTML = '';
     const avg = document.createElement('span');

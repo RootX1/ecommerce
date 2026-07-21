@@ -67,8 +67,93 @@ controls — so the repo is built to match it:
       history are handled entirely by WooCommerce's own native **My
       Account** page (`https://yourdomain.co.za/my-account/`, created
       automatically when WooCommerce is active). The storefront's Profile
-      tab just links there instead of reimplementing any of it — see "Why
-      no custom login system" in `docs/SECURITY.md`.
+      tab just links there (in a new tab) instead of reimplementing any of
+      it — see "Why no custom login system" in `docs/SECURITY.md`.
+- [ ] **Brand the native WooCommerce pages** so My Account and product
+      pages don't feel like a different site from the video-feed app. Go to
+      wp-admin → Appearance → Customize → Additional CSS and paste:
+
+      ```css
+      :root {
+        --egp-primary: #00406d;
+        --egp-primary-text: #ffffff;
+        --egp-secondary: #ebdc3a;
+        --egp-secondary-text: #00406d;
+      }
+
+      .woocommerce a.button,
+      .woocommerce button.button,
+      .woocommerce input.button,
+      .woocommerce #respond input#submit,
+      .woocommerce-MyAccount-navigation ul li a {
+        background-color: var(--egp-primary) !important;
+        color: var(--egp-primary-text) !important;
+        border-radius: 8px !important;
+        border: none !important;
+        font-weight: 600 !important;
+      }
+      .woocommerce a.button:hover,
+      .woocommerce button.button:hover,
+      .woocommerce input.button:hover,
+      .woocommerce #respond input#submit:hover {
+        background-color: #002e4d !important;
+      }
+      .woocommerce-MyAccount-navigation ul li a {
+        border-radius: 8px;
+        margin-bottom: 6px;
+        display: block;
+        text-align: center;
+      }
+      .woocommerce-MyAccount-navigation ul li.is-active a {
+        background-color: var(--egp-secondary) !important;
+        color: var(--egp-secondary-text) !important;
+      }
+      .woocommerce a:not(.button) {
+        color: var(--egp-primary);
+      }
+      .woocommerce div.product p.price,
+      .woocommerce div.product span.price {
+        color: var(--egp-primary);
+        font-weight: 700;
+      }
+      .woocommerce span.onsale {
+        background-color: var(--egp-secondary) !important;
+        color: var(--egp-secondary-text) !important;
+      }
+      .woocommerce .star-rating span::before {
+        color: var(--egp-secondary);
+      }
+      .woocommerce table.shop_table thead th {
+        background-color: var(--egp-primary);
+        color: var(--egp-primary-text);
+      }
+      ```
+
+      These target WooCommerce's own core CSS classes (added by the plugin's
+      templates, not the theme), so they should apply regardless of which
+      WordPress theme is active.
+- [ ] **Make "Write a review" land on the Reviews tab.** The storefront
+      links to `{product-url}#tab-reviews`, which is the id WooCommerce's
+      own tab system uses — but not every theme auto-expands a hidden tab
+      just because the URL hash matches it. If clicking through still
+      doesn't show the review form, add this via a snippet plugin (e.g.
+      "WPCode", "Insert Headers and Footers") in the site-wide footer:
+
+      ```html
+      <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          if (window.location.hash === '#tab-reviews') {
+            var reviewsTabLink = document.querySelector('a.reviews_tab, a[href="#tab-reviews"]');
+            if (reviewsTabLink) {
+              reviewsTabLink.click();
+              setTimeout(function () {
+                document.querySelector('#tab-reviews')?.scrollIntoView({ behavior: 'smooth' });
+              }, 150);
+            }
+          }
+        });
+      </script>
+      ```
 
 ## Phase 2 — Configure and deploy the Worker
 
