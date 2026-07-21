@@ -22,9 +22,18 @@ const feedData = products.map((p) => ({
   reviewCount: p.reviewCount,
   reviews: p.reviews,
 }));
+
+// Computed server-side (Astro.locals.runtime.env is always reliably
+// populated at request time) rather than read from import.meta.env in the
+// client script — PUBLIC_ vars aren't guaranteed to be baked in at build
+// time for a Cloudflare Workers build, and reading an undefined value
+// there previously threw and crashed the entire feed script on load,
+// silently breaking every button on the page (wishlist/reviews/share) and
+// the IntersectionObserver that loads videos past the first one.
+const wpOrigin = Astro.locals.runtime.env.PUBLIC_WOOCOMMERCE_API_URL.replace(/\/wp-json\/.*$/, '');
 ---
 
-<div class="video-feed" data-video-feed>
+<div class="video-feed" data-video-feed data-wp-origin={wpOrigin}>
   {products.map((product, i) => <VideoCard product={product} eager={i === 0} />)}
 </div>
 
@@ -45,11 +54,12 @@ const feedData = products.map((p) => ({
 <script>
   import { withBase } from '../lib/base';
 
-  // WordPress is the origin with the /wp-json/... suffix stripped — used to
-  // link "Write a review" at the actual WooCommerce product page, where
-  // review submission already works natively (WordPress login, verified
-  // purchase badges, moderation) instead of reimplementing any of that here.
-  const wpOrigin = (import.meta.env.PUBLIC_WOOCOMMERCE_API_URL as string).replace(/\/wp-json\/.*$/, '');
+  // Rendered server-side into a data attribute (see frontmatter) rather
+  // than read from import.meta.env here — used to link "Write a review" at
+  // the actual WooCommerce product page, where review submission already
+  // works natively (WordPress login, verified purchase badges, moderation)
+  // instead of reimplementing any of that here.
+  const wpOrigin = document.querySelector<HTMLElement>('[data-video-feed]')?.dataset.wpOrigin ?? '';
 
   interface FeedProduct {
     id: string;
