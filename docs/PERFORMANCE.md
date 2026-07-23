@@ -8,8 +8,6 @@
 - [x] The next card's video is preloaded once the current one crosses 60%
       visibility, so scrolling forward feels instant without preloading the
       entire feed up front.
-- [x] Reviews are fetched/rendered only when the review sheet is opened,
-      not on initial page load.
 - [ ] Compress every source video to <20 MB / 15–30s and run
       `-movflags +faststart` before upload (see `docs/R2_SETUP.md`).
 - [ ] Set R2 custom domain caching / Cloudflare Cache Rules so video and

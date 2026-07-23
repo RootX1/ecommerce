@@ -130,6 +130,17 @@ export function renderOrderConfirmationEmail(order: OrderConfirmationEmailInput)
                 </table>
 
                 <p style="margin:24px 0 0;font-size:13px;color:#5b6068;">We'll be in touch once your payment is confirmed.</p>
+
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;">
+                  <tr>
+                    <td align="center" style="border-radius:6px;background:#25d366;">
+                      <a href="https://wa.me/27680660131?text=${encodeURIComponent(`Hi! Just placed Order #${order.orderId} — here's a photo/rating of what I received:`)}"
+                         style="display:block;padding:12px 20px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;">
+                        💬 Share a photo or rating on WhatsApp
+                      </a>
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
             <tr>

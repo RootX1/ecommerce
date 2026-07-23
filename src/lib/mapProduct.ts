@@ -3,7 +3,7 @@
 // Custom Fields or ACF) since WooCommerce has no native video field:
 //   video_url        -> full R2 URL of the product's vertical video
 //   video_poster_url -> optional; falls back to the product's main image
-import type { Product, Review } from '../data/mockProducts';
+import type { Product } from '../data/mockProducts';
 import type { WooProduct } from './woocommerce';
 
 /** Any category matching this is treated as "needs a design upload" on the product page. */
@@ -59,7 +59,6 @@ export function mapWooProduct(product: WooProduct): Product {
     category: product.categories?.[0]?.name ?? 'Shop',
     shortDescription: product.short_description ? plainShortDescription(product.short_description) : '',
     description: product.description ? sanitizeDescriptionHtml(product.description) : '',
-    reviews: [] as Review[],
     requiresUpload: product.categories?.some((c) => isPersonalisedCategory(c.name, c.slug)) ?? false,
   };
 }

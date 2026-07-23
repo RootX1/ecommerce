@@ -25,12 +25,6 @@ export async function fetchProducts(params: { category?: string; search?: string
   return res.json();
 }
 
-export async function fetchReviews(productId: number) {
-  const res = await fetch(`${withBase('/api/reviews')}?product=${productId}`);
-  if (!res.ok) throw new Error('Failed to load reviews');
-  return res.json();
-}
-
 /** Fetches full product records for a set of saved ids (e.g. the wishlist). */
 export async function fetchProductsByIds(ids: (string | number)[]) {
   if (ids.length === 0) return [];

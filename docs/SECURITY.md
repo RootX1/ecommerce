@@ -3,7 +3,7 @@
 ## Architecture principle
 
 The Astro frontend is prerendered static HTML by default. All writes
-(reviews, orders, contact messages) go through server-rendered API routes
+(orders, contact messages) go through server-rendered API routes
 in `src/pages/api/*.ts` (part of the same Cloudflare Worker, via the
 `@astrojs/cloudflare` adapter), which hold the WooCommerce consumer
 key/secret and Turnstile secret as Worker **secrets** (`wrangler secret
@@ -13,9 +13,6 @@ put`, never `wrangler.jsonc`) — none of these ever reach the browser.
 
 - `src/lib/security.ts` (`sanitizeText`, `stripHtml`) strips HTML tags and
   caps length on every text field before it's forwarded to WooCommerce.
-- Review/comment text is rendered client-side with `textContent`, never
-  `innerHTML` — see `src/components/VideoFeed.astro` — so even if sanitization
-  were ever bypassed, stored XSS can't execute.
 - All API handlers validate required fields and reject malformed JSON with
   a 400 before touching WooCommerce.
 
@@ -80,14 +77,9 @@ put`, never `wrangler.jsonc`) — none of these ever reach the browser.
   a card linking to the real WooCommerce My Account page for
   sign-in/sign-up/orders/account details, plus the wishlist (which *is*
   storefront-specific, since WooCommerce has no native wishlist).
-- **Reviews are written on the actual WooCommerce product page, not in
-  this app.** The review sheet (`ReviewModal.astro`) reads existing
-  reviews via the REST API for display, but "Write a review" links out to
-  `{wordpress-origin}/?p={productId}` — WordPress's canonical
-  permalink-independent way to reach a post by ID — where WooCommerce's
-  native review form already handles login-gating, verified-purchase
-  badges, and moderation correctly, because it's WooCommerce's own code
-  path rather than a reimplementation of it.
+- **There is no in-app review feature at all** (removed — see below for
+  why). No `/api/reviews` endpoint, no review-submission form, no
+  moderation-queue logic to secure.
 - Net effect: no session cookies, no JWT plugin dependency, no password
   ever touching the Worker at all. The Worker's WooCommerce REST
   credentials (`WOOCOMMERCE_CONSUMER_KEY/SECRET`) remain the only
@@ -95,15 +87,31 @@ put`, never `wrangler.jsonc`) — none of these ever reach the browser.
   calls (products, orders it creates at checkout, shipping settings) —
   never on behalf of a signed-in customer.
 
+## Why no in-app reviews — WhatsApp instead
+
+Reviews were removed entirely rather than fixed again. In a scrolling
+video feed, shoppers glance at a star rating/count, they don't read
+written reviews — so the actual conversion driver (rating + count, already
+pulled straight from WooCommerce's `average_rating`/`rating_count`) never
+needed a custom submission form in the first place. What used to be the
+"Reviews" button in the feed overlay (`OverlayButtons.astro`) is now a
+direct WhatsApp chat (`https://wa.me/27680660131`, prefilled with the
+product), and the same WhatsApp number is offered post-purchase (checkout
+success page and the order confirmation email) asking for a quick
+photo/rating reply. This matches how South African shoppers already expect
+to reach a store — WhatsApp is the default customer-service channel here —
+and produces real photo/video UGC the store owner can manually feature,
+without any user-submitted-content moderation queue, spam surface, or
+review-writing UI to build or secure.
+
 ## Spam protection stack
 
 | Layer | Where | Detail |
 |---|---|---|
-| Cloudflare Turnstile | `src/lib/security.ts` (`verifyTurnstile`) | Widget rendered in `ReviewModal.astro` + `contact.astro` (`data-appearance="interaction-only"`); verified server-side against `challenges.cloudflare.com/turnstile/v0/siteverify`. Chosen over Google reCAPTCHA — see "Why Turnstile, not reCAPTCHA" below. |
-| Honeypot | `ReviewModal.astro`, `contact.astro` | Hidden `website`/`company` field; any value = bot |
-| Rate limiting | `checkRateLimit` (Cloudflare KV) | 5 reviews / 10 min / IP, 10 checkouts / 10 min / IP, 5 contact messages / 10 min / IP |
-| Link/script blocking | `containsLinkOrScript` | Rejects review/contact text containing URLs or `<script`/`javascript:` |
-| Moderation queue | WooCommerce reviews `status: hold` | First-time reviewers always held for manual approval |
+| Cloudflare Turnstile | `src/lib/security.ts` (`verifyTurnstile`) | Widget rendered in `contact.astro` (`data-appearance="interaction-only"`); verified server-side against `challenges.cloudflare.com/turnstile/v0/siteverify`. Chosen over Google reCAPTCHA — see "Why Turnstile, not reCAPTCHA" below. |
+| Honeypot | `contact.astro` | Hidden `company` field; any value = bot |
+| Rate limiting | `checkRateLimit` (Cloudflare KV) | 10 checkouts / 10 min / IP, 5 contact messages / 10 min / IP |
+| Link/script blocking | `containsLinkOrScript` | Rejects contact message text containing URLs or `<script`/`javascript:` |
 | Firewall | Cloudflare WAF | Add rate-limiting rules and known-spam-IP blocklists in the Cloudflare dashboard (see below) |
 | Alerting | Cloudflare + email | Configure a Cloudflare Notification for WAF rule triggers; wire a Worker alert to `CONTACT_TO_EMAIL` for repeated 429s if desired |
 
@@ -120,8 +128,8 @@ key/secret key pair at Cloudflare dashboard → **Turnstile** → **Add site**.
 
 ### Cloudflare KV binding required
 
-`src/pages/api/reviews.ts`, `checkout.ts`, and `contact.ts` all expect a KV
-namespace bound as `RATE_LIMIT_KV`. Create it once:
+`checkout.ts` and `contact.ts` both expect a KV namespace bound as
+`RATE_LIMIT_KV`. Create it once:
 
 ```
 npx wrangler kv namespace create RATE_LIMIT_KV
@@ -136,7 +144,7 @@ by that committed file, not the dashboard.
 1. Rate limit `/api/*` to e.g. 60 requests/min/IP as a second line of
    defense behind the KV-based limiter above.
 2. Block requests where `User-Agent` is empty or matches known bot
-   signatures for `/api/reviews` and `/api/contact`.
+   signatures for `/api/contact`.
 3. Enable "Bot Fight Mode" (free tier) or Super Bot Fight Mode (paid) under
    Security → Bots.
 4. Add an IP Access Rule to block any IP ranges flagged by Cloudflare's

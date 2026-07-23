@@ -132,29 +132,6 @@ controls — so the repo is built to match it:
       These target WooCommerce's own core CSS classes (added by the plugin's
       templates, not the theme), so they should apply regardless of which
       WordPress theme is active.
-- [ ] **Make "Write a review" land on the Reviews tab.** The storefront
-      links to `{product-url}#tab-reviews`, which is the id WooCommerce's
-      own tab system uses — but not every theme auto-expands a hidden tab
-      just because the URL hash matches it. If clicking through still
-      doesn't show the review form, add this via a snippet plugin (e.g.
-      "WPCode", "Insert Headers and Footers") in the site-wide footer:
-
-      ```html
-      <script>
-        document.addEventListener('DOMContentLoaded', function () {
-          if (window.location.hash === '#tab-reviews') {
-            var reviewsTabLink = document.querySelector('a.reviews_tab, a[href="#tab-reviews"]');
-            if (reviewsTabLink) {
-              reviewsTabLink.click();
-              setTimeout(function () {
-                document.querySelector('#tab-reviews')?.scrollIntoView({ behavior: 'smooth' });
-              }, 150);
-            }
-          }
-        });
-      </script>
-      ```
-
 ## Phase 2 — Configure and deploy the Worker
 
 - [ ] Edit `wrangler.jsonc` at the repo root: set `name`, the real domain in
@@ -190,9 +167,9 @@ controls — so the repo is built to match it:
       deploys regardless of what's in `wrangler.jsonc`.
 - [ ] Confirm the domain's DNS is proxied through Cloudflare (orange cloud)
       — `routes` bindings only apply to proxied traffic.
-- [ ] **Set up the SMTP secrets for sending mail** — contact-form messages,
-      order confirmations, and review/order verification codes are all sent
-      by the Worker connecting directly to Xneelo's own mail server for
+- [ ] **Set up the SMTP secrets for sending mail** — contact-form messages
+      and order confirmations are sent by the Worker connecting directly to
+      Xneelo's own mail server for
       `sales@ecommercegoods.co.za` (via `worker-mailer`, over Cloudflare TCP
       Sockets) — nothing routes through MailChannels or any other
       Cloudflare-hosted relay, so there's no extra DNS record to add on top
@@ -243,8 +220,7 @@ and you confirm payment manually once you see the transfer land.
       Core Web Vitals "Good" on mobile.
 - [ ] Cross-device test: iOS Safari, Android Chrome, desktop Chrome/Firefox.
 - [ ] Confirm Turnstile, honeypot, and rate limiting are all active in
-      production (submit a test review/contact message and check
-      WooCommerce's moderation queue).
+      production (submit a test contact message and check it arrives).
 - [ ] Link to the storefront from the existing WordPress site's main
       navigation/homepage (e.g. a "Shop" menu item pointing at `/store/`) so
       customers can actually find it.

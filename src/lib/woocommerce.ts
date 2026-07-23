@@ -71,10 +71,6 @@ export function listProductCategories(env: WooCommerceEnv) {
   return wooFetch<WooProductCategory[]>(env, `/products/categories?${params.toString()}`);
 }
 
-export function listProductReviews(env: WooCommerceEnv, productId: string | number) {
-  return wooFetch(env, `/products/reviews?product=${productId}&status=approved`);
-}
-
 export interface NewOrderInput {
   status: string;
   payment_method: string;

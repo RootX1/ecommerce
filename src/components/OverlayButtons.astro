@@ -7,6 +7,13 @@ interface Props {
 }
 
 const { product } = Astro.props;
+
+// Replaces in-app reviews: a direct WhatsApp chat, prefilled with the
+// product, is a much lower-friction way for South African shoppers to ask
+// a question or share feedback than filling in a form — WhatsApp is
+// already the default channel people use to talk to local stores.
+const productUrl = new URL(withBase(`/product/${product.slug}`), Astro.site).toString();
+const whatsappHref = `https://wa.me/27680660131?text=${encodeURIComponent(`Hi! I'm interested in ${product.title} — ${productUrl}`)}`;
 ---
 
 <div class="overlay-buttons">
@@ -15,10 +22,10 @@ const { product } = Astro.props;
     <span class="count">Wishlist</span>
   </button>
 
-  <button class="action-btn" data-action="reviews" data-product-id={product.id} aria-label="Open reviews">
-    <span class="icon message" aria-hidden="true"></span>
-    <span class="count">{product.reviewCount}</span>
-  </button>
+  <a class="action-btn" href={whatsappHref} target="_blank" rel="noopener noreferrer" aria-label="Ask about this product on WhatsApp">
+    <span class="icon whatsapp" aria-hidden="true"></span>
+    <span class="count">WhatsApp</span>
+  </a>
 
   <a class="action-btn buy-btn" href={withBase(`/product/${product.slug}`)} aria-label="Buy this product now">
     <span class="icon-badge">
@@ -110,9 +117,9 @@ const { product } = Astro.props;
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21s-7.5-4.7-10-9.3C.5 8 2.4 4.5 6 4.5c2 0 3.5 1 4 2.4.5-1.4 2-2.4 4-2.4 3.6 0 5.5 3.5 4 7.2C19.5 16.3 12 21 12 21z'/%3E%3C/svg%3E");
     -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21s-7.5-4.7-10-9.3C.5 8 2.4 4.5 6 4.5c2 0 3.5 1 4 2.4.5-1.4 2-2.4 4-2.4 3.6 0 5.5 3.5 4 7.2C19.5 16.3 12 21 12 21z'/%3E%3C/svg%3E");
   }
-  .icon.message {
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 4h16v11H8l-4 4z'/%3E%3C/svg%3E");
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 4h16v11H8l-4 4z'/%3E%3C/svg%3E");
+  .icon.whatsapp {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a10 10 0 00-8.6 15.1L2 22l5.06-1.33A10 10 0 1012 2zm5.6 14.3c-.24.66-1.4 1.26-1.93 1.32-.5.06-1.11.09-1.8-.11a11.1 11.1 0 01-4.06-2.16 11.6 11.6 0 01-2.6-3.6c-.4-.7-.1-1.09.24-1.44.28-.28.62-.46.83-.46.2 0 .35 0 .5.01.16.01.38-.06.6.46.24.58.8 2 .87 2.14.07.15.11.31.02.5-.08.19-.13.3-.26.46-.13.16-.27.35-.39.47-.13.13-.26.28-.11.55.15.27.68 1.13 1.47 1.83.99.87 1.83 1.15 2.1 1.28.27.13.43.11.6-.06.16-.18.68-.79.87-1.06.18-.27.36-.22.6-.13.24.09 1.53.72 1.8.85.26.13.44.2.5.31.06.14.06.78-.18 1.44z'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a10 10 0 00-8.6 15.1L2 22l5.06-1.33A10 10 0 1012 2zm5.6 14.3c-.24.66-1.4 1.26-1.93 1.32-.5.06-1.11.09-1.8-.11a11.1 11.1 0 01-4.06-2.16 11.6 11.6 0 01-2.6-3.6c-.4-.7-.1-1.09.24-1.44.28-.28.62-.46.83-.46.2 0 .35 0 .5.01.16.01.38-.06.6.46.24.58.8 2 .87 2.14.07.15.11.31.02.5-.08.19-.13.3-.26.46-.13.16-.27.35-.39.47-.13.13-.26.28-.11.55.15.27.68 1.13 1.47 1.83.99.87 1.83 1.15 2.1 1.28.27.13.43.11.6-.06.16-.18.68-.79.87-1.06.18-.27.36-.22.6-.13.24.09 1.53.72 1.8.85.26.13.44.2.5.31.06.14.06.78-.18 1.44z'/%3E%3C/svg%3E");
   }
   .icon.bag {
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 7V6a5 5 0 0110 0v1h3l1 14H3L4 7zm2 0h6V6a3 3 0 00-6 0z'/%3E%3C/svg%3E");

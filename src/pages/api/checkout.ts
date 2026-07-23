@@ -161,6 +161,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         `Please use "Order #${orderId}" as your payment reference so we can match your transfer.`,
         '',
         "We'll be in touch once payment is confirmed.",
+        '',
+        `Loved what you got? Send us a quick photo and rating on WhatsApp: https://wa.me/27680660131`,
       ]
         .filter((line) => line !== '')
         .join('\n'),

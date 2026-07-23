@@ -60,6 +60,10 @@ import { withBase } from '../../lib/base';
       <p class="reference-note">Please use your order number as the payment reference so we can match your transfer.</p>
     </div>
 
+    <a class="whatsapp-cta" data-whatsapp-cta href="https://wa.me/27680660131" target="_blank" rel="noopener noreferrer" hidden>
+      💬 Share a photo or rating on WhatsApp
+    </a>
+
     <a class="continue-btn" href={withBase('/')}>Continue shopping</a>
   </div>
 </Layout>
@@ -144,9 +148,21 @@ import { withBase } from '../../lib/base';
     margin: 10px 0 0;
     color: var(--muted);
   }
+  .whatsapp-cta {
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    background: #25d366;
+    color: #fff;
+    text-decoration: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+  }
   .continue-btn {
     display: inline-block;
-    margin-top: 24px;
+    margin-top: 12px;
     background: var(--primary);
     color: var(--primary-text);
     text-decoration: none;
@@ -174,6 +190,7 @@ import { withBase } from '../../lib/base';
   const bankDetailsEl = document.querySelector<HTMLElement>('[data-bank-details]')!;
   const instructionsEl = document.querySelector<HTMLElement>('[data-instructions]')!;
   const fieldsEl = document.querySelector<HTMLElement>('[data-account-fields]')!;
+  const whatsappCta = document.querySelector<HTMLAnchorElement>('[data-whatsapp-cta]')!;
 
   const FIELD_LABELS: Record<string, string> = {
     account_name: 'Account name',
@@ -198,6 +215,11 @@ import { withBase } from '../../lib/base';
       overviewEmail.textContent = order.billingEmail;
       overviewTotal.textContent = formatZar(order.total);
       overviewPayment.textContent = order.paymentMethodTitle;
+
+      whatsappCta.hidden = false;
+      whatsappCta.href = `https://wa.me/27680660131?text=${encodeURIComponent(
+        `Hi! Just placed Order #${order.orderId} — here's a photo/rating of what I received:`
+      )}`;
 
       itemsBody.innerHTML = order.items
         .map(
