@@ -63,6 +63,33 @@ controls — so the repo is built to match it:
       put mugs/personalised items in it — the product page automatically
       shows a design-upload field for any product in that category (see
       `src/lib/mapProduct.ts`).
+- [ ] **Auto-send a branded PDF invoice after payment** — WooCommerce's
+      core "Processing order"/"Completed order" emails already fire
+      automatically the moment you change an order's status (right after
+      confirming the bank transfer), but they don't attach an actual PDF.
+      Install the free **WooCommerce PDF Invoices & Packing Slips** plugin
+      (WordPress.org, by WP Overnight) to add that:
+      1. Plugins → Add New → search "WooCommerce PDF Invoices & Packing
+         Slips" → Install → Activate.
+      2. WooCommerce → Settings → **Documents** → **Invoice**: turn on
+         **"Enable"**, then under **Attach to email** tick "Processing
+         order", "Completed order", and "Customer invoice" — this is what
+         makes the PDF ride along on the emails WooCommerce already sends.
+      3. WooCommerce → Settings → Documents → **General**: upload your
+         logo (used as the PDF header) and fill in **"Extra template
+         fields"** with your shop name/address plus a line for contact
+         details, e.g.:
+         ```
+         WhatsApp: +27 68 066 0131
+         Email: sales@ecommercegoods.co.za
+         ```
+      4. Place a real test BACS order, mark it "Processing" in
+         WooCommerce → Orders, and confirm the customer email arrives with
+         a PDF invoice attached showing the logo and contact details.
+      This also sets the invoice's on-screen/footer text used by
+      `docs/SECURITY.md` → "Why no in-app reviews" WhatsApp flow, keeping
+      the same contact number across the storefront, order confirmation
+      email, and invoice PDF.
 - [ ] No plugin needed for accounts: sign-in, registration, and order
       history are handled entirely by WooCommerce's own native **My
       Account** page (`https://yourdomain.co.za/my-account/`, created
