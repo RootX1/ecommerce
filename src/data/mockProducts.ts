@@ -10,8 +10,6 @@ export interface Product {
   regularPrice: number;
   currency: string;
   discountPercent: number;
-  rating: number;
-  reviewCount: number;
   videoUrl: string;
   posterUrl: string;
   category: string;
@@ -30,8 +28,6 @@ export const mockProducts: Product[] = [
     regularPrice: 599,
     currency: 'ZAR',
     discountPercent: 25,
-    rating: 4.8,
-    reviewCount: 132,
     videoUrl: '/videos/sample-1.mp4',
     posterUrl: '/videos/sample-1-poster.jpg',
     category: 'Canvas Prints',
@@ -45,8 +41,6 @@ export const mockProducts: Product[] = [
     regularPrice: 149,
     currency: 'ZAR',
     discountPercent: 0,
-    rating: 4.6,
-    reviewCount: 87,
     videoUrl: '/videos/sample-2.mp4',
     posterUrl: '/videos/sample-2-poster.jpg',
     category: 'Photo Gifts',

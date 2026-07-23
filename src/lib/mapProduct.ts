@@ -52,8 +52,6 @@ export function mapWooProduct(product: WooProduct): Product {
     regularPrice,
     currency: 'ZAR',
     discountPercent,
-    rating: Number(product.average_rating || 0),
-    reviewCount: Number(product.rating_count || 0),
     videoUrl: metaValue(product, 'video_url'),
     posterUrl: metaValue(product, 'video_poster_url') || product.images?.[0]?.src || '',
     category: product.categories?.[0]?.name ?? 'Shop',

@@ -39,7 +39,6 @@ const regularFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', cur
         </>
       )}
     </div>
-    <div class="rating">★ {product.rating.toFixed(1)} · {product.reviewCount} reviews</div>
     {product.shortDescription && <p class="short-desc">{product.shortDescription}</p>}
   </div>
 
@@ -119,11 +118,6 @@ const regularFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', cur
     border-radius: 4px;
     font-size: 12px;
     font-weight: 600;
-  }
-
-  .rating {
-    font-size: 13px;
-    opacity: 0.9;
   }
 
   .short-desc {

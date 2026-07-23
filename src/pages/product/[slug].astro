@@ -32,7 +32,6 @@ const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', curre
     <div class="product-details">
       <h1>{product.title}</h1>
       <p class="price">{priceFormatted}</p>
-      <p class="rating">★ {product.rating.toFixed(1)} · {product.reviewCount} reviews</p>
 
       {
         product.requiresUpload && (
@@ -116,11 +115,6 @@ const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', curre
     font-size: 24px;
     font-weight: 800;
     color: var(--secondary-text);
-    margin: 0 0 4px;
-  }
-  .rating {
-    color: var(--muted);
-    font-size: 13px;
     margin: 0 0 16px;
   }
   .upload-section {
