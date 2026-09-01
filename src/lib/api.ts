@@ -11,8 +11,8 @@ export interface CartItem {
   unitPrice: number;
   quantity: number;
   imageUrl: string;
-  /** R2 URL of the customer's uploaded design, for personalised products. */
-  designImageUrl?: string;
+  /** R2 URLs of the customer's uploaded design images (up to 3), for personalised products. */
+  designImageUrls?: string[];
 }
 
 export async function fetchProducts(params: { category?: string; search?: string; page?: number } = {}) {
@@ -102,7 +102,7 @@ export async function startCheckout(items: CartItem[], billing: CheckoutBilling)
         quantity: i.quantity,
         unitPrice: i.unitPrice,
         name: i.name,
-        designImageUrl: i.designImageUrl,
+        designImageUrls: i.designImageUrls,
       })),
       billing,
     }),

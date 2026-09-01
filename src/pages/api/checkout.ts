@@ -16,7 +16,7 @@ import { renderOrderConfirmationEmail } from '../../lib/emailTemplates';
 export const prerender = false;
 
 interface CheckoutPayload {
-  items: { productId: number; quantity: number; unitPrice: number; name: string; designImageUrl?: string }[];
+  items: { productId: number; quantity: number; unitPrice: number; name: string; designImageUrls?: string[] }[];
   billing: {
     firstName: string;
     lastName: string;
@@ -118,11 +118,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
     line_items: payload.items.map((item) => {
       // Only trust design URLs that are actually ours — never let a
       // customer inject an arbitrary link into the order via this field.
-      const isOwnUpload = item.designImageUrl?.startsWith(env.PUBLIC_UPLOADS_BASE_URL);
+      const ownUploads = (item.designImageUrls ?? []).filter((url) => url.startsWith(env.PUBLIC_UPLOADS_BASE_URL));
       return {
         product_id: item.productId,
         quantity: item.quantity,
-        meta_data: isOwnUpload ? [{ key: 'Design Upload', value: item.designImageUrl as string }] : undefined,
+        meta_data: ownUploads.length > 0 ? ownUploads.map((url, i) => ({ key: `Design Upload ${i + 1}`, value: url })) : undefined,
       };
     }),
     shipping_lines: [{ method_id: shipping.methodId, method_title: shipping.methodTitle, total: shipping.cost.toFixed(2) }],

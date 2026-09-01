@@ -137,7 +137,11 @@ import { withBase } from '../lib/base';
         <div class="cart-item-info">
           <p class="cart-item-name">${item.name}</p>
           <p class="cart-item-price">${formatZar(item.unitPrice)} × ${item.quantity}</p>
-          ${item.designImageUrl ? '<p class="cart-item-design">✓ Design uploaded</p>' : ''}
+          ${
+            item.designImageUrls?.length
+              ? `<p class="cart-item-design">✓ ${item.designImageUrls.length} design${item.designImageUrls.length > 1 ? 's' : ''} uploaded</p>`
+              : ''
+          }
         </div>
         <div class="qty-controls">
           <button data-decrease>-</button>

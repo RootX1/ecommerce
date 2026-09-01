@@ -37,12 +37,9 @@ const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', curre
         product.requiresUpload && (
           <div class="upload-section" data-upload-section>
             <label class="upload-label" for="design-file">Upload your design</label>
-            <p class="upload-hint">Add the photo or artwork you'd like printed on this item (JPG, PNG, WEBP — max 8MB).</p>
-            <input type="file" id="design-file" accept="image/jpeg,image/png,image/webp,image/gif" data-design-input />
-            <div class="upload-preview" data-upload-preview hidden>
-              <img data-upload-preview-img alt="Your uploaded design" />
-              <span class="upload-status" data-upload-status></span>
-            </div>
+            <p class="upload-hint">Add up to 3 photos or artwork you'd like printed on this item (JPG, PNG, WEBP — max 8MB each). Only 3 images are allowed.</p>
+            <input type="file" id="design-file" accept="image/jpeg,image/png,image/webp,image/gif" multiple data-design-input />
+            <div class="upload-preview" data-upload-preview hidden></div>
             <p class="upload-error" data-upload-error hidden></p>
           </div>
         )
@@ -142,9 +139,17 @@ const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', curre
   }
   .upload-preview {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 10px;
     margin-top: 10px;
+  }
+  .upload-thumb {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
   }
   .upload-preview img {
     width: 56px;
@@ -153,7 +158,7 @@ const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', curre
     border-radius: 8px;
   }
   .upload-status {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--muted);
   }
   .upload-error {
@@ -237,32 +242,59 @@ const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', curre
   import { uploadDesign } from '../../lib/api';
   import { withBase } from '../../lib/base';
 
-  let uploadedDesignUrl: string | null = null;
+  const MAX_DESIGN_IMAGES = 3;
+
+  let uploadedDesignUrls: string[] = [];
   let uploading = false;
 
   const designInput = document.querySelector<HTMLInputElement>('[data-design-input]');
   const previewEl = document.querySelector<HTMLElement>('[data-upload-preview]');
-  const previewImg = document.querySelector<HTMLImageElement>('[data-upload-preview-img]');
-  const statusEl = document.querySelector<HTMLElement>('[data-upload-status]');
   const uploadErrorEl = document.querySelector<HTMLElement>('[data-upload-error]');
 
   designInput?.addEventListener('change', async () => {
-    const file = designInput.files?.[0];
-    if (!file || !statusEl || !previewEl || !previewImg) return;
+    const files = Array.from(designInput.files ?? []);
+    if (files.length === 0 || !previewEl) return;
 
-    uploadedDesignUrl = null;
-    uploading = true;
     if (uploadErrorEl) uploadErrorEl.hidden = true;
+
+    if (files.length > MAX_DESIGN_IMAGES) {
+      if (uploadErrorEl) {
+        uploadErrorEl.hidden = false;
+        uploadErrorEl.textContent = `Only ${MAX_DESIGN_IMAGES} images are allowed. Please select up to ${MAX_DESIGN_IMAGES} images.`;
+      }
+      designInput.value = '';
+      return;
+    }
+
+    uploadedDesignUrls = [];
+    uploading = true;
     previewEl.hidden = false;
-    previewImg.src = URL.createObjectURL(file);
-    statusEl.textContent = 'Uploading...';
+    previewEl.innerHTML = '';
+
+    const thumbs = files.map((file) => {
+      const thumb = document.createElement('div');
+      thumb.className = 'upload-thumb';
+      const img = document.createElement('img');
+      img.alt = 'Your uploaded design';
+      img.src = URL.createObjectURL(file);
+      const status = document.createElement('span');
+      status.className = 'upload-status';
+      status.textContent = 'Uploading...';
+      thumb.append(img, status);
+      previewEl.append(thumb);
+      return status;
+    });
 
     try {
-      const { url } = await uploadDesign(file);
-      uploadedDesignUrl = url;
-      statusEl.textContent = 'Uploaded ✓';
+      const results = await Promise.all(
+        files.map(async (file, i) => {
+          const { url } = await uploadDesign(file);
+          thumbs[i].textContent = 'Uploaded ✓';
+          return url;
+        })
+      );
+      uploadedDesignUrls = results;
     } catch (err) {
-      statusEl.textContent = '';
       if (uploadErrorEl) {
         uploadErrorEl.hidden = false;
         uploadErrorEl.textContent = err instanceof Error ? err.message : 'Upload failed, please try again.';
@@ -279,7 +311,7 @@ const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', curre
       name: btn.dataset.name ?? '',
       unitPrice: Number(btn.dataset.price),
       imageUrl: btn.dataset.image ?? '',
-      designImageUrl: uploadedDesignUrl ?? undefined,
+      designImageUrls: uploadedDesignUrls.length > 0 ? uploadedDesignUrls : undefined,
     };
   }
 
@@ -298,7 +330,7 @@ const priceFormatted = new Intl.NumberFormat('en-ZA', { style: 'currency', curre
       }
       return true;
     }
-    if (!uploadedDesignUrl) {
+    if (uploadedDesignUrls.length === 0) {
       if (uploadErrorEl) {
         uploadErrorEl.hidden = false;
         uploadErrorEl.textContent = 'Please upload your design before adding this item.';
